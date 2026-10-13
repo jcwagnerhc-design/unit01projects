@@ -1,0 +1,774 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Sleep vs. Test Scores (Copy)</title>
+<style>
+  :root {
+    --bg: #f6f6f3;
+    --panel: #ffffff;
+    --soft: #f0f0ec;
+    --text: #1d1d1f;
+    --muted: #6b6b70;
+    --grid: #ebebe7;
+    --axis: #a0a0a5;
+    --ink: #2b2b30;
+    --added: #7c4dff;
+    --pos: #2f6fdb;
+    --neg: #e0662e;
+    --accent: #2f6fdb;
+    --on-accent: #ffffff;
+    --border: #e2e2dd;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #141416;
+      --panel: #1e1e21;
+      --soft: #26262a;
+      --text: #ececee;
+      --muted: #9d9da3;
+      --grid: #2a2a2e;
+      --axis: #606066;
+      --ink: #e6e6ea;
+      --added: #b39bff;
+      --pos: #6aa0ff;
+      --neg: #ff8a52;
+      --accent: #5b8ff0;
+      --on-accent: #ffffff;
+      --border: #323237;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #141416;
+    --panel: #1e1e21;
+    --soft: #26262a;
+    --text: #ececee;
+    --muted: #9d9da3;
+    --grid: #2a2a2e;
+    --axis: #606066;
+    --ink: #e6e6ea;
+    --added: #b39bff;
+    --pos: #6aa0ff;
+    --neg: #ff8a52;
+    --accent: #5b8ff0;
+    --on-accent: #ffffff;
+    --border: #323237;
+    color-scheme: dark;
+  }
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font: 16px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+  main { max-width: 1120px; margin: 0 auto; padding: 22px 16px 40px; }
+  header { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+  h1 { font-size: 1.45rem; margin: 0; text-wrap: balance; }
+  .skip { font: inherit; font-size: .9rem; color: var(--accent); background: none; border: 0; padding: 0; cursor: pointer; }
+
+  /* Stepper */
+  .stepper { display: flex; gap: 6px; margin: 14px 0 18px; flex-wrap: wrap; }
+  .stepper button {
+    display: flex; align-items: center; gap: 6px;
+    font: inherit; font-size: .82rem; color: var(--muted);
+    background: none; border: 1px solid var(--border); border-radius: 999px;
+    padding: 4px 10px 4px 4px; cursor: pointer;
+  }
+  .stepper .num {
+    width: 20px; height: 20px; border-radius: 50%; display: grid; place-items: center;
+    background: var(--soft); font-size: .75rem; font-weight: 600;
+  }
+  .stepper .done .num { background: var(--border); color: var(--text); }
+  .stepper .cur { border-color: var(--accent); color: var(--text); }
+  .stepper .cur .num { background: var(--accent); color: var(--on-accent); }
+  @media (max-width: 700px) {
+    .stepper button:not(.cur) .nm { display: none; }
+    .stepper button:not(.cur) { padding-right: 4px; }
+  }
+
+  .layout { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 20px; align-items: start; }
+  .layout > * { min-width: 0; }
+  @media (max-width: 860px) { .layout { grid-template-columns: 1fr; } }
+  .card { background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 16px; }
+
+  svg { display: block; width: 100%; height: auto; user-select: none; -webkit-user-select: none; touch-action: none; }
+  .dot { transition: transform .5s ease; }
+  .dragging .dot { transition: none; }
+  .ov { transition: opacity .3s; }
+  .ov.hide { opacity: 0; transition: none; }
+  @media (prefers-reduced-motion: reduce) { .dot, .ov { transition: none; } }
+
+  button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  .legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: .82rem; color: var(--muted); margin-top: 6px; }
+  .legend span::before {
+    content: ""; display: inline-block; width: 10px; height: 10px; border-radius: 50%;
+    margin-right: 6px; vertical-align: -1px; background: var(--c);
+  }
+  .legend .sq::before { border-radius: 2px; opacity: .55; }
+  .legend .ln::before { width: 16px; height: 2px; border-radius: 0; vertical-align: 3px; }
+  .legend .dash::before { width: 16px; height: 0; border-top: 2px dashed var(--c); background: none; vertical-align: 3px; }
+  .hint { color: var(--muted); font-size: .85rem; margin: 6px 0 0; min-height: 1.2em; }
+
+  /* Step card */
+  .kicker { font-size: .78rem; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; color: var(--accent); }
+  h2 { font-size: 1.2rem; margin: 2px 0 8px; text-wrap: balance; }
+  .body { margin: 0 0 10px; }
+  .try { margin: 0 0 14px; padding: 8px 10px; background: var(--soft); border-radius: 8px; font-size: .92rem; }
+  .try b { color: var(--accent); }
+
+  .control { margin-top: 14px; }
+  .control:first-child { margin-top: 0; }
+  .lbl, .control label { display: flex; justify-content: space-between; font-weight: 600; font-size: .9rem; }
+  .control label output { font-weight: 500; font-variant-numeric: tabular-nums; color: var(--muted); }
+  input[type=range] { width: 100%; margin: 8px 0 2px; accent-color: var(--accent); }
+  .ends { display: flex; justify-content: space-between; font-size: .72rem; color: var(--muted); }
+  .checks { display: flex; gap: 14px; flex-wrap: wrap; font-size: .9rem; margin-top: 14px; }
+  .checks label { display: flex; gap: 6px; align-items: center; font-weight: 400; cursor: pointer; }
+  .checks input { accent-color: var(--accent); }
+  .buttons { display: flex; gap: 8px; margin-top: 14px; flex-wrap: wrap; }
+  button.b {
+    font: inherit; font-size: .9rem; padding: 7px 12px; border-radius: 8px; cursor: pointer;
+    border: 1px solid var(--border); background: var(--soft); color: var(--text);
+  }
+  button.primary { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+  button.b:disabled { opacity: .45; cursor: default; }
+  .seg { display: inline-flex; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; margin-top: 6px; }
+  .seg button { font: inherit; font-size: .88rem; border: 0; background: transparent; color: var(--text); padding: 6px 12px; cursor: pointer; }
+  .seg button[aria-pressed=true] { background: var(--accent); color: var(--on-accent); }
+  .predict .q { font-weight: 600; margin: 0 0 8px; }
+  .predict .opts { display: flex; flex-direction: column; gap: 6px; }
+  .predict .opts button { text-align: left; }
+  .predict .opts button[aria-pressed=true] { border-color: var(--accent); background: var(--accent); color: var(--on-accent); }
+  .predict .fb { font-size: .9rem; color: var(--muted); margin: 10px 0 0; }
+
+  .readout { margin-top: 14px; }
+  .readout:empty { display: none; }
+  .pair { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .pair > div { background: var(--soft); border-radius: 8px; padding: 8px 10px; border: 1px solid transparent; }
+  .pair > div.on { border-color: var(--accent); }
+  .pair span { display: block; font-size: .78rem; color: var(--muted); }
+  .pair b { font-size: 1.15rem; font-variant-numeric: tabular-nums; }
+  .who { font-weight: 600; margin-bottom: 6px; }
+  table.calc { width: 100%; border-collapse: collapse; font-size: .9rem; font-variant-numeric: tabular-nums; }
+  .calc td { padding: 5px 0; border-top: 1px solid var(--border); }
+  .calc td:nth-child(2) { color: var(--muted); text-align: right; padding-right: 8px; }
+  .calc td:last-child { text-align: right; font-weight: 600; white-space: nowrap; }
+  .calc tr.prod td { font-size: 1rem; }
+  .note { font-size: .85rem; color: var(--muted); margin: 10px 0 0; }
+  .note b, .note em { color: var(--text); }
+  .pos { color: var(--pos); }
+  .neg { color: var(--neg); }
+
+  .tally .row { display: grid; grid-template-columns: 92px 1fr 64px; gap: 8px; align-items: center; font-size: .85rem; margin-bottom: 6px; }
+  .tally .bar { height: 10px; background: var(--soft); border-radius: 5px; overflow: hidden; }
+  .tally .bar i { display: block; height: 100%; border-radius: 5px; }
+  .tally .row b { text-align: right; font-variant-numeric: tabular-nums; }
+  .tally .sum { border-top: 1px solid var(--border); padding-top: 6px; }
+
+  .formula {
+    font-family: "Cambria Math", "STIX Two Math", Georgia, serif; font-size: 1.05rem;
+    margin: 12px 0 0; padding: 10px 12px; background: var(--soft); border-radius: 8px;
+    white-space: nowrap; overflow-x: auto; display: flex; align-items: center; gap: 4px;
+  }
+  .frac { display: inline-flex; flex-direction: column; text-align: center; margin: 0 2px; }
+  .frac > span:first-child { border-bottom: 1px solid currentColor; padding: 0 4px 2px; }
+  .frac > span:last-child { padding: 2px 4px 0; }
+  .formula b { font-family: system-ui, sans-serif; }
+
+  .big { display: flex; justify-content: space-between; align-items: baseline; margin-top: 12px; }
+  .big span { font-weight: 600; }
+  .big b { font-size: 1.7rem; font-variant-numeric: tabular-nums; }
+  .meter { position: relative; height: 8px; border-radius: 4px; margin: 10px 0 4px;
+    background: linear-gradient(90deg, var(--neg), var(--grid) 50%, var(--pos)); }
+  .meter i { position: absolute; top: -4px; width: 4px; height: 16px; border-radius: 2px; background: var(--text); transform: translateX(-50%); }
+  .meter i.ghost { background: var(--muted); opacity: .6; }
+  .desc { margin: 10px 0 0; font-size: .95rem; }
+
+  .nav { display: flex; justify-content: space-between; gap: 8px; margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--border); flex-wrap: wrap; }
+  .nav .spacer { flex: 1; }
+
+  .about { margin-top: 24px; padding-top: 16px; border-top: 1px solid var(--border); max-width: 72ch; font-size: .85rem; color: var(--muted); }
+  .about h3 { font-size: .95rem; margin: 0 0 6px; color: var(--text); }
+  .about p, .about ul { margin: 6px 0 0; }
+  .about ul { padding-left: 18px; }
+  .about b { color: var(--text); }
+</style>
+<main>
+  <header>
+    <h1>Sleep vs. test scores: covariance &amp; correlation</h1>
+    <button class="skip" id="skip">Skip to Explore →</button>
+  </header>
+  <nav class="stepper" id="stepper" aria-label="Steps"></nav>
+
+  <div class="layout">
+    <section class="card">
+      <svg id="plot" viewBox="0 0 600 440" role="img" aria-label="Scatterplot of sleep versus test score"></svg>
+      <div class="legend">
+        <span style="--c: var(--ink)">Student</span>
+        <span data-steps="7" style="--c: var(--added)">Added by you</span>
+        <span data-steps="2,3,4,5,7" class="sq" style="--c: var(--pos)">Pushes covariance up</span>
+        <span data-steps="2,3,4,5,7" class="sq" style="--c: var(--neg)">Pulls it down</span>
+        <span data-steps="6,7" class="ln" style="--c: var(--ink)">Best-fit line</span>
+        <span data-steps="6" class="dash" style="--c: var(--muted)">Before you moved anyone</span>
+      </div>
+      <p class="hint" id="hint"></p>
+    </section>
+
+    <section class="card">
+      <div class="kicker" id="kicker"></div>
+      <h2 id="stitle"></h2>
+      <p class="body" id="sbody"></p>
+      <p class="try" id="stry"></p>
+
+      <div data-steps="0" class="predict">
+        <p class="q">Do students who sleep more tend to score higher?</p>
+        <div class="opts">
+          <button class="b" data-pred="pos">Yes, they score higher</button>
+          <button class="b" data-pred="neg">No, they score lower</button>
+          <button class="b" data-pred="none">There's no clear pattern</button>
+        </div>
+        <p class="fb" id="predFb"></p>
+      </div>
+
+      <div data-steps="7">
+        <div class="control">
+          <label for="rho">Relationship <output id="rhoOut"></output></label>
+          <input id="rho" type="range" min="-1" max="1" step="0.05" value="0.6">
+          <div class="ends"><span>Strong negative</span><span>None</span><span>Strong positive</span></div>
+        </div>
+        <div class="control">
+          <label for="n">Students <output id="nOut"></output></label>
+          <input id="n" type="range" min="10" max="100" step="1" value="30">
+        </div>
+      </div>
+
+      <div data-steps="4,5,7" class="control">
+        <span class="lbl">Sleep measured in</span>
+        <div class="seg" role="group" aria-label="Sleep units">
+          <button data-unit="hours">Hours</button><button data-unit="minutes">Minutes</button>
+        </div>
+      </div>
+      <div data-steps="5,7" class="control">
+        <span class="lbl">Axes show</span>
+        <div class="seg" role="group" aria-label="Axis scale">
+          <button data-view="data">Data units</button><button data-view="z">Standard deviations</button>
+        </div>
+      </div>
+
+      <div data-steps="7">
+        <div class="checks">
+          <label><input type="checkbox" id="cMeans" checked> Averages</label>
+          <label><input type="checkbox" id="cRects"> Rectangles</label>
+          <label><input type="checkbox" id="cFit" checked> Best-fit line</label>
+        </div>
+        <div class="buttons">
+          <button class="b primary" id="newClass">New random class</button>
+          <button class="b" id="clearAdded">Clear added</button>
+        </div>
+      </div>
+
+      <div class="readout" id="readout" aria-live="polite"></div>
+
+      <div class="nav">
+        <button class="b" id="back">← Back</button>
+        <span class="spacer"></span>
+        <button class="b" id="reset" data-steps="1,2,3,4,5,6">Reset students</button>
+        <button class="b primary" id="next">Next →</button>
+      </div>
+    </section>
+  </div>
+
+  <footer class="about">
+    <h3>About this simulation</h3>
+    <p>Made by <b>Will Keller</b> with help from Claude, an AI assistant made by Anthropic.</p>
+    <ul>
+      <li><b>My part:</b> I chose the topic and the original features: the sliders, the new-class button, adding outliers, the hours/minutes switch, the best-fit line, and the live covariance and r. I asked for the step-by-step structure and chose which formulas to show.</li>
+      <li><b>Claude's part:</b> Claude wrote all of the code. It also suggested the covariance rectangles, dragging students, and the 8 steps.</li>
+    </ul>
+    <p>I am responsible for how this simulation looks and works. If you find a mistake, please let me know.</p>
+  </footer>
+</main>
+
+<script>
+(() => {
+  const $ = id => document.getElementById(id);
+  const NS = "http://www.w3.org/2000/svg";
+  const el = (tag, attrs, parent) => {
+    const e = document.createElementNS(NS, tag);
+    for (const k in attrs) e.setAttribute(k, attrs[k]);
+    if (parent) parent.appendChild(e);
+    return e;
+  };
+  const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
+  const MINUS = "−";
+  const fmt = (v, d = 1) => { const a = Math.abs(v).toFixed(d); return (v < 0 && +a ? MINUS : "") + a; };
+  const fmtS = (v, d = 1) => { const a = Math.abs(v).toFixed(d); return (+a ? (v > 0 ? "+" : MINUS) : "") + a; };
+  const cls = v => v > 0 ? "pos" : v < 0 ? "neg" : "";
+  const frac = (a, b) => `<span class="frac"><span>${a}</span><span>${b}</span></span>`;
+
+  // ---------- Steps ----------
+  const STEPS = [
+    { name: "Look", title: "Look at the class",
+      body: "Each dot is one student: how many hours they slept the night before a test, and the score they got.",
+      means: false, rects: "none" },
+    { name: "Center", title: "Find the center",
+      body: "The dashed lines mark the average sleep (x̄) and the average score (ȳ). Together they split the class into four groups.",
+      try: "Drag a student and watch the averages move.",
+      means: true, rects: "none", drag: true, quads: true },
+    { name: "One student", title: "One student at a time",
+      body: "For each student, ask: how far from average is their sleep? How far from average is their score? Then multiply the two.",
+      try: "Click different students. Can you find one whose product is negative?",
+      means: true, rects: "selected", drag: true, select: true, quads: true, arrows: true },
+    { name: "Covariance", title: "Add them up: covariance",
+      body: "Now every student gets a rectangle. Blue ones push covariance up, orange ones pull it down. Covariance is roughly the average rectangle.",
+      try: "Drag a student into an orange corner. Watch covariance drop.",
+      means: true, rects: "all", drag: true },
+    { name: "Units", title: "The problem with covariance",
+      body: "Covariance has units: hours × points. What happens if we measure sleep in minutes instead?",
+      try: "Switch sleep to minutes.",
+      means: true, rects: "all", drag: true, select: true },
+    { name: "Correlation", title: "Fix it: correlation (r)",
+      body: "Measure every student in standard deviations from average (a z-score). The units disappear, and r always lands between −1 and +1.",
+      try: "Switch the axes to standard deviations. Then flip hours ↔ minutes: r doesn't change.",
+      means: true, rects: "all", drag: true },
+    { name: "Outliers", title: "Outliers",
+      body: "One unusual student can change r a lot, especially in a small class.",
+      try: "Drag one student into an empty corner of the plot.",
+      means: true, rects: "none", drag: true, fit: true, ghost: true },
+    { name: "Explore", title: "Explore",
+      body: "Build your own classes and test what you learned.",
+      try: "Click empty space to add a student. Drag any student to move them." },
+  ];
+
+  // ---------- Data ----------
+  const CLASS = [
+    ["Ava", 5.0, 60], ["Ben", 5.5, 79], ["Chloe", 6.0, 64], ["Diego", 6.5, 72], ["Emma", 7.0, 70],
+    ["Finn", 7.5, 83], ["Grace", 8.0, 86], ["Hugo", 8.5, 69], ["Isla", 9.0, 90],
+  ];
+  let nextId = 0;
+  const guided = CLASS.map(([name, x, y]) => ({ id: nextId++, name, x, y }));
+  const resetGuided = () => guided.forEach((p, i) => { p.x = CLASS[i][1]; p.y = CLASS[i][2]; });
+
+  let pool = [], overrides = new Map(), added = [];
+  let step = 0, unit = "hours", view = "data";
+  let selected = guided[6].id;
+  let prediction = null, triedMinutes = false, snapshot = null;
+  const show = { means: true, rects: false, fit: true };
+
+  function randn() {
+    let u = 0, v = 0;
+    while (!u) u = Math.random();
+    while (!v) v = Math.random();
+    return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
+  }
+  function newPool() {
+    pool = Array.from({ length: 100 }, () => ({ id: nextId++, a: randn(), b: randn() }));
+    overrides = new Map();
+    added = [];
+  }
+  // Same random draws + new slider value = dots slide smoothly into place
+  function explorePts() {
+    const rho = +$("rho").value, n = +$("n").value, k = Math.sqrt(1 - rho * rho);
+    return pool.slice(0, n).map(s => overrides.get(s.id) || {
+      id: s.id,
+      x: clamp(Math.round((7 + 1.2 * s.a) * 10) / 10, 4, 10),
+      y: clamp(Math.round(75 + 11 * (rho * s.a + k * s.b)), 35, 100),
+    }).concat(added);
+  }
+  const points = () => step === 7 ? explorePts() : guided;
+
+  function movePoint(id, x, y) {
+    if (step < 7) { const p = guided.find(p => p.id === id); p.x = x; p.y = y; return; }
+    const a = added.find(p => p.id === id);
+    if (a) { a.x = x; a.y = y; } else overrides.set(id, { id, x, y });
+  }
+
+  // All stats in hours; minutes = x × 60
+  function stats(pts) {
+    const n = pts.length;
+    if (n < 2) return null;
+    let mx = 0, my = 0;
+    for (const p of pts) { mx += p.x; my += p.y; }
+    mx /= n; my /= n;
+    let sxy = 0, sxx = 0, syy = 0, pos = 0, neg = 0;
+    for (const p of pts) {
+      const dx = p.x - mx, dy = p.y - my, pr = dx * dy;
+      sxy += pr; sxx += dx * dx; syy += dy * dy;
+      if (pr > 0) pos += pr; else neg += pr;
+    }
+    const d = n - 1;
+    return {
+      n, mx, my, sxy, pos, neg,
+      cov: sxy / d, sx: Math.sqrt(sxx / d), sy: Math.sqrt(syy / d),
+      r: sxx && syy ? sxy / Math.sqrt(sxx * syy) : NaN,
+      slope: sxx ? sxy / sxx : NaN,
+    };
+  }
+
+  function describe(r) {
+    if (isNaN(r)) return "Not enough variation to measure a relationship.";
+    const a = Math.abs(r);
+    if (a < 0.1) return "No real relationship: how much a student slept tells you almost nothing about their score.";
+    const strength = a >= 0.7 ? "Strong" : a >= 0.3 ? "Moderate" : "Weak";
+    const tend = a >= 0.3 ? "tended to" : "slightly tended to";
+    return `${strength} ${r > 0 ? "positive" : "negative"} relationship: students who slept more ${tend} score ${r > 0 ? "higher" : "lower"}.`;
+  }
+
+  // ---------- Geometry ----------
+  const W = 600, H = 440, M = { l: 58, r: 18, t: 16, b: 50 };
+  const PW = W - M.l - M.r, PH = H - M.t - M.b;
+  const U = u => view === "z" ? M.l + (clamp(u, -3.3, 3.3) + 3) / 6 * PW : M.l + (u - 3) / 8 * PW;
+  const V = v => view === "z" ? M.t + (3 - clamp(v, -3.3, 3.3)) / 6 * PH : M.t + (100 - v) / 80 * PH;
+  const uv = (p, s) => view === "z" && s ? [(p.x - s.mx) / (s.sx || 1), (p.y - s.my) / (s.sy || 1)] : [p.x, p.y];
+  const ctr = s => view === "z" ? [0, 0] : [s.mx, s.my];
+  const fromScreen = (sx, sy) => ({
+    x: clamp(Math.round((3 + (sx - M.l) / PW * 8) * 10) / 10, 3, 11),
+    y: clamp(Math.round(100 - (sy - M.t) / PH * 80), 20, 100),
+  });
+  const inPlot = (x, y) => x >= M.l && x <= W - M.r && y >= M.t && y <= H - M.b;
+
+  // ---------- SVG layers ----------
+  const svg = $("plot");
+  const defs = el("defs", {}, svg);
+  el("rect", { x: M.l, y: M.t, width: PW, height: PH }, el("clipPath", { id: "area" }, defs));
+  const gAxes = el("g", {}, svg);
+  const ov = el("g", { class: "ov", "clip-path": "url(#area)" }, svg);
+  const gRects = el("g", {}, ov), gMeans = el("g", {}, ov), gLine = el("g", {}, ov);
+  const gDots = el("g", {}, svg);
+  const gAnno = el("g", { class: "ov", "pointer-events": "none" }, svg);
+  const dotEls = new Map();
+
+  function text(parent, x, y, s, attrs = {}) {
+    const t = el("text", Object.assign({ x, y, fill: "var(--muted)", "font-size": 12 }, attrs), parent);
+    t.textContent = s;
+    return t;
+  }
+
+  function drawAxes() {
+    gAxes.innerHTML = "";
+    const z = view === "z";
+    const ys = z ? [-3, -2, -1, 0, 1, 2, 3] : [20, 30, 40, 50, 60, 70, 80, 90, 100];
+    const xs = z ? [-3, -2, -1, 0, 1, 2, 3] : [3, 4, 5, 6, 7, 8, 9, 10, 11];
+    for (const y of ys) {
+      el("line", { x1: M.l, x2: W - M.r, y1: V(y), y2: V(y), stroke: "var(--grid)" }, gAxes);
+      text(gAxes, M.l - 8, V(y) + 4, z ? fmtS(y, 0) : y, { "text-anchor": "end" });
+    }
+    for (const x of xs) {
+      el("line", { x1: U(x), x2: U(x), y1: M.t, y2: H - M.b, stroke: "var(--grid)" }, gAxes);
+      text(gAxes, U(x), H - M.b + 18, z ? fmtS(x, 0) : unit === "hours" ? x : x * 60, { "text-anchor": "middle" });
+    }
+    el("line", { x1: M.l, x2: W - M.r, y1: H - M.b, y2: H - M.b, stroke: "var(--axis)" }, gAxes);
+    el("line", { x1: M.l, x2: M.l, y1: M.t, y2: H - M.b, stroke: "var(--axis)" }, gAxes);
+    text(gAxes, M.l + PW / 2, H - 10, z ? "Sleep (SDs from average)" : `Sleep the night before (${unit})`,
+      { "text-anchor": "middle", fill: "var(--text)", "font-size": 13 });
+    text(gAxes, 0, 0, z ? "Score (SDs from average)" : "Test score",
+      { "text-anchor": "middle", fill: "var(--text)", "font-size": 13, transform: `translate(16 ${M.t + PH / 2}) rotate(-90)` });
+  }
+
+  function flags() {
+    if (step === 7) return { means: show.means, rects: show.rects ? "all" : "none", fit: show.fit, drag: true };
+    return STEPS[step];
+  }
+
+  // ---------- Render ----------
+  function render() {
+    const F = flags(), pts = points(), s = stats(pts);
+    const f = unit === "hours" ? 1 : 60, uShort = unit === "hours" ? "h" : "min", xd = f === 1 ? 1 : 0;
+    const canDrag = F.drag && view === "data";
+
+    drawAxes();
+    for (const g of [gRects, gMeans, gLine, gAnno]) g.innerHTML = "";
+
+    if (s) {
+      const [cu, cv] = ctr(s);
+
+      if (F.rects !== "none") {
+        for (const p of pts) {
+          if (F.rects === "selected" && p.id !== selected) continue;
+          const [u, v] = uv(p, s);
+          const pr = (p.x - s.mx) * (p.y - s.my);
+          const hl = F.select && p.id === selected;
+          const x1 = U(cu), x2 = U(u), y1 = V(cv), y2 = V(v), c = pr >= 0 ? "var(--pos)" : "var(--neg)";
+          el("rect", {
+            x: Math.min(x1, x2), y: Math.min(y1, y2), width: Math.abs(x2 - x1), height: Math.abs(y2 - y1),
+            fill: c, "fill-opacity": hl ? .3 : .12, stroke: c, "stroke-opacity": hl ? .9 : .4, "stroke-width": hl ? 1.5 : 1,
+          }, gRects);
+        }
+      }
+
+      if (F.quads) {
+        const q = [
+          [M.l + 8, M.t + 16, "start", "Less sleep, higher score", "neg"],
+          [W - M.r - 8, M.t + 16, "end", "More sleep, higher score", "pos"],
+          [M.l + 8, H - M.b - 10, "start", "Less sleep, lower score", "pos"],
+          [W - M.r - 8, H - M.b - 10, "end", "More sleep, lower score", "neg"],
+        ];
+        for (const [x, y, a, t, c] of q) text(gAnno, x, y, t, { "text-anchor": a, fill: `var(--${c})`, "font-size": 11.5, "font-weight": 600 });
+      }
+
+      if (F.means) {
+        const mx = U(cu), my = V(cv), z = view === "z";
+        el("line", { x1: mx, x2: mx, y1: M.t, y2: H - M.b, stroke: "var(--ink)", "stroke-dasharray": "5 4", opacity: .55 }, gMeans);
+        el("line", { x1: M.l, x2: W - M.r, y1: my, y2: my, stroke: "var(--ink)", "stroke-dasharray": "5 4", opacity: .55 }, gMeans);
+        text(gMeans, mx + 5, H - M.b - 26, z ? "average" : `x̄ = ${fmt(s.mx * f, xd)} ${uShort}`, { fill: "var(--text)" });
+        text(gMeans, W - M.r - 6, my - 6, z ? "average" : `ȳ = ${fmt(s.my, 1)}`, { fill: "var(--text)", "text-anchor": "end" });
+      }
+
+      if (F.fit && !isNaN(s.slope)) {
+        const line = (mx, my, b, attrs) => view === "z"
+          ? el("line", Object.assign({ x1: U(-4), y1: V(-4 * s.r), x2: U(4), y2: V(4 * s.r) }, attrs), gLine)
+          : el("line", Object.assign({ x1: U(3), y1: V(my + b * (3 - mx)), x2: U(11), y2: V(my + b * (11 - mx)) }, attrs), gLine);
+        if (F.ghost && snapshot) line(snapshot.mx, snapshot.my, snapshot.slope, { stroke: "var(--muted)", "stroke-width": 2, "stroke-dasharray": "6 5" });
+        line(s.mx, s.my, s.slope, { stroke: "var(--ink)", "stroke-width": 2, opacity: .8 });
+      }
+
+      const sel = pts.find(p => p.id === selected);
+      if (F.select && sel && view === "data") {
+        const [u, v] = uv(sel, s);
+        const X = U(u), Y = V(v), mx = U(cu), my = V(cv), dx = sel.x - s.mx, dy = sel.y - s.my;
+        el("circle", { cx: X, cy: Y, r: 11, fill: "none", stroke: "var(--ink)", "stroke-width": 1.5 }, gAnno);
+        text(gAnno, X, dy >= 0 ? Y - 17 : Y + 26, sel.name, { "text-anchor": "middle", fill: "var(--text)", "font-weight": 600 });
+        if (F.arrows) {
+          el("line", { x1: mx, y1: my, x2: X, y2: my, stroke: "var(--ink)", "stroke-width": 2 }, gAnno);
+          el("line", { x1: X, y1: my, x2: X, y2: Y, stroke: "var(--ink)", "stroke-width": 2 }, gAnno);
+          if (Math.abs(X - mx) > 4)
+            text(gAnno, (mx + X) / 2, my + (dy >= 0 ? 16 : -8), `${fmtS(dx * f, xd)} ${uShort}`, { "text-anchor": "middle", fill: "var(--text)", "font-weight": 600 });
+          if (Math.abs(Y - my) > 4)
+            text(gAnno, X + (dx >= 0 ? 6 : -6), (my + Y) / 2 + 4, `${fmtS(dy, 1)} pts`, { "text-anchor": dx >= 0 ? "start" : "end", fill: "var(--text)", "font-weight": 600 });
+        }
+      }
+    }
+
+    // Dots: reuse elements so they animate
+    const seen = new Set();
+    for (const p of pts) {
+      seen.add(p.id);
+      let c = dotEls.get(p.id);
+      if (!c) {
+        c = el("circle", {
+          r: step < 7 ? 7 : 5.5, class: "dot", "data-id": p.id,
+          fill: p.added ? "var(--added)" : "var(--ink)", "fill-opacity": step < 7 || p.added ? .9 : .7,
+          stroke: "transparent", "stroke-width": 10,
+        }, gDots);
+        if (p.name) el("title", {}, c).textContent = p.name;
+        dotEls.set(p.id, c);
+      }
+      const [u, v] = uv(p, s);
+      c.style.transform = `translate(${U(u)}px, ${V(v)}px)`;
+      c.style.cursor = canDrag ? "grab" : F.select ? "pointer" : "default";
+    }
+    for (const [id, c] of dotEls) if (!seen.has(id)) { c.remove(); dotEls.delete(id); }
+
+    $("hint").textContent = F.drag && view === "z" ? "Switch back to data units to move students." : "";
+    $("readout").innerHTML = s ? readout(s, f, uShort, xd) : "";
+  }
+
+  function meter(r, ghost) {
+    const pos = v => `${(clamp(v, -1, 1) + 1) * 50}%`;
+    return `<div class="meter">${ghost !== undefined ? `<i class="ghost" style="left:${pos(ghost)}"></i>` : ""}<i style="left:${isNaN(r) ? "50%" : pos(r)}"></i></div>
+      <div class="ends"><span>${MINUS}1</span><span>0</span><span>+1</span></div>`;
+  }
+  const rTxt = r => isNaN(r) ? "–" : fmtS(r, 2);
+
+  function readout(s, f, uShort, xd) {
+    const covD = f === 1 ? 2 : 1;
+    const sel = guided.find(p => p.id === selected);
+    switch (step) {
+      case 0: return "";
+      case 1:
+        return `<div class="pair">
+          <div><span>Average sleep</span><b>x̄ = ${fmt(s.mx, 1)} h</b></div>
+          <div><span>Average score</span><b>ȳ = ${fmt(s.my, 1)}</b></div></div>`;
+      case 2: {
+        const dx = sel.x - s.mx, dy = sel.y - s.my, pr = dx * dy;
+        return `<div class="who">${sel.name} slept ${fmt(sel.x, 1)} h and scored ${sel.y}.</div>
+          <table class="calc">
+            <tr><td>Sleep vs. average</td><td>${fmt(sel.x, 1)} ${MINUS} ${fmt(s.mx, 1)}</td><td class="${cls(dx)}">${fmtS(dx, 1)} h</td></tr>
+            <tr><td>Score vs. average</td><td>${sel.y} ${MINUS} ${fmt(s.my, 1)}</td><td class="${cls(dy)}">${fmtS(dy, 1)}</td></tr>
+            <tr class="prod"><td>Multiply</td><td>(${fmtS(dx, 1)}) × (${fmtS(dy, 1)})</td><td class="${cls(pr)}">${fmtS(pr, 1)}</td></tr>
+          </table>
+          <p class="note">Same signs (both above or both below average) → <b class="pos">positive</b>.
+          Opposite signs → <b class="neg">negative</b>.</p>`;
+      }
+      case 3: {
+        const pos = s.pos * f, neg = s.neg * f, sum = s.sxy * f, max = Math.max(pos, -neg) || 1;
+        const bar = (v, c) => `<div class="bar"><i style="width:${Math.abs(v) / max * 100}%;background:var(--${c})"></i></div>`;
+        return `<div class="tally">
+            <div class="row"><span>Blue total</span>${bar(pos, "pos")}<b class="pos">${fmtS(pos, 1)}</b></div>
+            <div class="row"><span>Orange total</span>${bar(neg, "neg")}<b class="neg">${fmtS(neg, 1)}</b></div>
+            <div class="row sum"><span>Sum</span>${bar(sum, sum >= 0 ? "pos" : "neg")}<b>${fmtS(sum, 1)}</b></div>
+          </div>
+          <div class="formula">cov = ${frac("Σ(x − x̄)(y − ȳ)", "n − 1")} = ${frac(fmtS(sum, 1), s.n - 1)} = <b>${fmtS(s.cov * f, covD)}</b></div>
+          <p class="note">Σ means “add up.” Dividing by n − 1 makes it (roughly) the average rectangle.</p>`;
+      }
+      case 4: {
+        const dx = (sel.x - s.mx) * f, dy = sel.y - s.my;
+        return `<div class="who">${sel.name}: (${fmtS(dx, xd)} ${uShort}) × (${fmtS(dy, 1)} pts) = <span class="${cls(dx * dy)}">${fmtS(dx * dy, xd)}</span></div>
+          <div class="pair">
+            <div class="${unit === "hours" ? "on" : ""}"><span>Covariance (hours)</span><b>${fmtS(s.cov, 2)}</b></div>
+            <div class="${unit === "minutes" ? "on" : ""}"><span>Covariance (minutes)</span><b>${fmtS(s.cov * 60, 1)}</b></div>
+          </div>
+          ${triedMinutes ? `<p class="note">Same students, same picture, but a number <b>60× bigger</b>.
+            Did sleep suddenly matter 60× more? No. Covariance's size depends on units, so it can't tell us how <em>strong</em> a relationship is.</p>`
+            : `<p class="note">Click a student to see their numbers.</p>`}`;
+      }
+      case 5: {
+        const zsum = s.sxy / (s.sx * s.sy);
+        let check = "";
+        if (prediction && !isNaN(s.r)) {
+          const actual = s.r > 0.1 ? "pos" : s.r < -0.1 ? "neg" : "none";
+          const lab = { pos: "students who sleep more score higher", neg: "students who sleep more score lower", none: "no clear pattern" };
+          check = `<p class="note">In step 1 you guessed <b>${lab[prediction]}</b>. ${prediction === actual ? "r agrees ✓" : `r says <b>${lab[actual]}</b>.`}</p>`;
+        }
+        return `<div class="formula">z = ${frac("value − average", "SD")}</div>
+          <div class="formula">r = ${frac("Σ z<sub>x</sub> z<sub>y</sub>", "n − 1")} = ${frac(fmtS(zsum, 2), s.n - 1)} = <b>${rTxt(s.r)}</b></div>
+          <div class="formula">r = ${frac("cov", "s<sub>x</sub> · s<sub>y</sub>")} = ${frac(fmtS(s.cov * f, covD), `${fmt(s.sx * f, covD)} × ${fmt(s.sy, 2)}`)} = <b>${rTxt(s.r)}</b></div>
+          <p class="note">s<sub>x</sub> and s<sub>y</sub> are the standard deviations of sleep and score.
+          ${triedMinutes ? "In minutes, cov and s<sub>x</sub> <b>both</b> grow 60×, so the 60s cancel." : ""}</p>
+          <div class="big"><span>Correlation r</span><b>${rTxt(s.r)}</b></div>
+          ${meter(s.r)}
+          <p class="desc">${describe(s.r)}</p>${check}`;
+      }
+      case 6: {
+        const moved = snapshot && Math.abs(snapshot.r - s.r) > 0.005;
+        return `<div class="pair">
+            <div><span>Before</span><b>r = ${rTxt(snapshot.r)}</b></div>
+            <div class="${moved ? "on" : ""}"><span>Now</span><b>r = ${rTxt(s.r)}</b></div>
+          </div>
+          ${meter(s.r, snapshot.r)}
+          <p class="desc">${describe(s.r)}</p>
+          <p class="note">${moved ? "The dashed line shows where the best-fit line was. Try the same move with 100 students in Explore: does one student matter as much?"
+            : "Grab any student and pull them far from the others."}</p>`;
+      }
+      case 7:
+        return `<div class="pair">
+            <div><span>Covariance (${unit} × points)</span><b>${fmtS(s.cov * f, covD)}</b></div>
+            <div><span>Correlation r</span><b>${rTxt(s.r)}</b></div>
+          </div>
+          ${meter(s.r)}
+          <p class="desc">${describe(s.r)}</p>`;
+    }
+  }
+
+  // ---------- Step UI ----------
+  function syncUI() {
+    const S = STEPS[step];
+    $("kicker").textContent = `Step ${step + 1} of ${STEPS.length}`;
+    $("stitle").textContent = S.title;
+    $("sbody").textContent = S.body;
+    $("stry").innerHTML = S.try ? `<b>Try:</b> ${S.try}` : "";
+    $("stry").hidden = !S.try;
+    document.querySelectorAll("[data-steps]").forEach(e => { e.hidden = !e.dataset.steps.split(",").includes(String(step)); });
+    document.querySelectorAll("[data-unit]").forEach(b => b.setAttribute("aria-pressed", b.dataset.unit === unit));
+    document.querySelectorAll("[data-view]").forEach(b => b.setAttribute("aria-pressed", b.dataset.view === view));
+    document.querySelectorAll("[data-pred]").forEach(b => b.setAttribute("aria-pressed", b.dataset.pred === prediction));
+    $("predFb").textContent = prediction ? "Got it. You'll check your guess with a number in step 6." : "";
+    [...$("stepper").children].forEach((b, i) => {
+      b.className = i === step ? "cur" : i < step ? "done" : "";
+      b.setAttribute("aria-current", i === step ? "step" : "false");
+    });
+    $("back").style.visibility = step === 0 ? "hidden" : "visible";
+    $("next").hidden = step === STEPS.length - 1;
+    $("next").textContent = step === STEPS.length - 2 ? "Explore →" : "Next →";
+    $("skip").hidden = step === STEPS.length - 1;
+    $("rhoOut").textContent = fmtS(+$("rho").value, 2);
+    $("nOut").textContent = $("n").value;
+    $("clearAdded").disabled = !added.length;
+  }
+
+  function fadeOverlays() {
+    for (const g of [ov, gAnno]) g.classList.add("hide");
+    setTimeout(() => { for (const g of [ov, gAnno]) g.classList.remove("hide"); }, 450);
+  }
+
+  function goTo(i) {
+    step = i;
+    view = "data";
+    if (![4, 5, 7].includes(i)) unit = "hours";
+    if (i === 6) { const s = stats(guided); snapshot = { mx: s.mx, my: s.my, slope: s.slope, r: s.r }; }
+    if (i === 7 && !pool.length) newPool();
+    fadeOverlays();
+    syncUI();
+    render();
+  }
+
+  STEPS.forEach((S, i) => {
+    const b = document.createElement("button");
+    b.innerHTML = `<span class="num">${i + 1}</span><span class="nm">${S.name}</span>`;
+    b.addEventListener("click", () => goTo(i));
+    $("stepper").appendChild(b);
+  });
+
+  // ---------- Events ----------
+  $("next").addEventListener("click", () => goTo(Math.min(step + 1, STEPS.length - 1)));
+  $("back").addEventListener("click", () => goTo(Math.max(step - 1, 0)));
+  $("skip").addEventListener("click", () => goTo(STEPS.length - 1));
+  $("reset").addEventListener("click", () => { resetGuided(); render(); });
+
+  document.querySelectorAll("[data-pred]").forEach(b => b.addEventListener("click", () => { prediction = b.dataset.pred; syncUI(); }));
+  document.querySelectorAll("[data-unit]").forEach(b => b.addEventListener("click", () => {
+    unit = b.dataset.unit;
+    if (unit === "minutes") triedMinutes = true;
+    syncUI(); render();
+  }));
+  document.querySelectorAll("[data-view]").forEach(b => b.addEventListener("click", () => {
+    if (view === b.dataset.view) return;
+    view = b.dataset.view;
+    fadeOverlays(); syncUI(); render();
+  }));
+
+  $("rho").addEventListener("input", () => { syncUI(); render(); });
+  $("n").addEventListener("input", () => { syncUI(); render(); });
+  $("cMeans").addEventListener("change", e => { show.means = e.target.checked; render(); });
+  $("cRects").addEventListener("change", e => { show.rects = e.target.checked; render(); });
+  $("cFit").addEventListener("change", e => { show.fit = e.target.checked; render(); });
+  $("newClass").addEventListener("click", () => { newPool(); syncUI(); render(); });
+  $("clearAdded").addEventListener("click", () => { added = []; syncUI(); render(); });
+
+  // Drag to move, click to select (guided) or add (Explore)
+  let drag = null;
+  const toSvg = e => {
+    const pt = svg.createSVGPoint();
+    pt.x = e.clientX; pt.y = e.clientY;
+    return pt.matrixTransform(svg.getScreenCTM().inverse());
+  };
+  svg.addEventListener("pointerdown", e => {
+    const loc = toSvg(e);
+    const t = e.target.closest && e.target.closest("[data-id]");
+    if (t) {
+      drag = { id: +t.dataset.id, x: loc.x, y: loc.y, moved: false };
+      svg.setPointerCapture(e.pointerId);
+      e.preventDefault();
+      return;
+    }
+    if (step === 7 && view === "data" && inPlot(loc.x, loc.y)) {
+      const d = fromScreen(loc.x, loc.y);
+      added.push({ id: nextId++, x: d.x, y: d.y, added: true });
+      syncUI(); render();
+    }
+  });
+  svg.addEventListener("pointermove", e => {
+    if (!drag || !(flags().drag && view === "data")) return;
+    const loc = toSvg(e);
+    if (!drag.moved && Math.hypot(loc.x - drag.x, loc.y - drag.y) < 4) return;
+    drag.moved = true;
+    svg.classList.add("dragging");
+    const d = fromScreen(loc.x, loc.y);
+    movePoint(drag.id, d.x, d.y);
+    render();
+  });
+  const endDrag = () => {
+    if (!drag) return;
+    if (!drag.moved && flags().select) { selected = drag.id; render(); }
+    drag = null;
+    svg.classList.remove("dragging");
+  };
+  svg.addEventListener("pointerup", endDrag);
+  svg.addEventListener("pointercancel", endDrag);
+
+  goTo(0);
+})();
+</script>
+
+</body></html>

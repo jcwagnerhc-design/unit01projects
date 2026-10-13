@@ -1,0 +1,1876 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TOWNSCAPER: CANTILEVER — 3D Coastal Architecture & Structural Toy</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    body, html {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', Roboto, sans-serif;
+      background: #142334;
+      color: #f8fafc;
+    }
+
+    #app {
+      position: relative;
+      width: 100vw;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+      cursor: pointer;
+    }
+
+    /* GLASS UI PANELS */
+    .glass-panel {
+      background: rgba(13, 21, 32, 0.82);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 14px;
+      box-shadow: 0 12px 36px rgba(0, 0, 0, 0.35);
+    }
+
+    /* LEFT TOWNSCAPER DOCK (BLOCK TYPES, PALETTE & UNDO) */
+    .palette-dock {
+      position: absolute;
+      left: 18px;
+      top: 50%;
+      transform: translateY(-50%);
+      padding: 10px 8px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 7px;
+      z-index: 10;
+    }
+
+    .dock-section-title {
+      font-size: 8px;
+      font-weight: 800;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      color: #94a3b8;
+      margin-bottom: 1px;
+    }
+
+    /* BLOCK TYPE BUTTONS */
+    .type-btn {
+      width: 34px;
+      height: 34px;
+      border-radius: 9px;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      font-size: 15px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.15s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    .type-btn:hover {
+      background: rgba(255, 255, 255, 0.2);
+      transform: scale(1.1);
+      border-color: rgba(255, 255, 255, 0.4);
+    }
+
+    .type-btn.active {
+      background: rgba(56, 189, 248, 0.28);
+      border-color: #38bdf8;
+      box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.4);
+      transform: scale(1.12);
+    }
+
+    .swatch-btn {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      border: 2px solid rgba(255, 255, 255, 0.2);
+      cursor: pointer;
+      transition: transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1), border-color 0.15s, box-shadow 0.15s;
+    }
+
+    .swatch-btn:hover {
+      transform: scale(1.15);
+      border-color: rgba(255, 255, 255, 0.85);
+    }
+
+    .swatch-btn.active {
+      transform: scale(1.22);
+      border-color: #ffffff;
+      box-shadow: 0 0 0 2.5px rgba(56, 189, 248, 0.6), 0 4px 10px rgba(0,0,0,0.4);
+    }
+
+    .palette-divider {
+      width: 22px;
+      height: 1px;
+      background: rgba(255, 255, 255, 0.15);
+      margin: 3px 0;
+    }
+
+    /* UNDO & ERASER BUTTONS */
+    .action-icon-btn {
+      width: 32px;
+      height: 32px;
+      border-radius: 9px;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      color: #f8fafc;
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.15s ease;
+      position: relative;
+    }
+
+    .action-icon-btn:hover {
+      background: rgba(255, 255, 255, 0.22);
+      border-color: rgba(255, 255, 255, 0.45);
+      transform: scale(1.1);
+    }
+
+    .action-icon-btn:active {
+      transform: scale(0.95);
+    }
+
+    .action-icon-btn.active-tool {
+      background: rgba(244, 63, 94, 0.35);
+      border-color: #f43f5e;
+      color: #ffe4e6;
+      box-shadow: 0 0 0 2px rgba(244, 63, 94, 0.4);
+    }
+
+    .undo-counter {
+      position: absolute;
+      top: -4px;
+      right: -4px;
+      background: #38bdf8;
+      color: #0b101d;
+      font-size: 8px;
+      font-weight: 800;
+      border-radius: 5px;
+      padding: 1px 3.5px;
+      min-width: 12px;
+      text-align: center;
+      line-height: 10px;
+      pointer-events: none;
+    }
+
+    /* TOP BAR */
+    .top-bar {
+      position: absolute;
+      top: 16px;
+      left: 18px;
+      right: 18px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      pointer-events: none;
+      z-index: 10;
+    }
+
+    .top-group {
+      pointer-events: auto;
+      padding: 8px 14px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .title-badge {
+      font-weight: 800;
+      font-size: 15px;
+      letter-spacing: 0.6px;
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      color: #fff;
+    }
+
+    .subtitle-tag {
+      font-size: 11px;
+      color: #94a3b8;
+      font-weight: 500;
+    }
+
+    .ui-btn {
+      background: rgba(255, 255, 255, 0.08);
+      color: #f8fafc;
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      border-radius: 8px;
+      padding: 6px 11px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.15s ease;
+    }
+
+    .ui-btn:hover {
+      background: rgba(255, 255, 255, 0.18);
+      border-color: rgba(255, 255, 255, 0.4);
+      transform: translateY(-1px);
+    }
+
+    .ui-btn.active-toggle {
+      background: rgba(56, 189, 248, 0.25);
+      border-color: #38bdf8;
+      color: #e0f2fe;
+    }
+
+    .ui-select {
+      background: rgba(15, 23, 42, 0.85);
+      color: #f8fafc;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 8px;
+      padding: 6px 10px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      outline: none;
+    }
+
+    /* RIGHT PANEL: SUN & TELEMETRY */
+    .right-dock {
+      position: absolute;
+      right: 18px;
+      top: 76px;
+      width: 235px;
+      padding: 13px;
+      display: flex;
+      flex-direction: column;
+      gap: 11px;
+      z-index: 10;
+    }
+
+    .dock-header {
+      font-size: 9.5px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: #94a3b8;
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+      padding-bottom: 4px;
+    }
+
+    .stat-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 12px;
+    }
+
+    .stat-val {
+      font-weight: 700;
+      font-family: 'SF Mono', 'Roboto Mono', monospace;
+    }
+
+    input[type="range"] {
+      -webkit-appearance: none;
+      width: 100%;
+      height: 5px;
+      border-radius: 4px;
+      background: linear-gradient(90deg, #2563eb 0%, #f59e0b 55%, #b91c1c 80%, #0f172a 100%);
+      outline: none;
+    }
+
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 15px;
+      height: 15px;
+      border-radius: 50%;
+      background: #f8fafc;
+      border: 2px solid #0f172a;
+      cursor: pointer;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.4);
+    }
+
+    /* BOTTOM CONTROLS PILL */
+    .bottom-pill {
+      position: absolute;
+      bottom: 16px;
+      left: 50%;
+      transform: translateX(-50%);
+      padding: 8px 18px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      font-size: 12px;
+      color: #e2e8f0;
+      z-index: 10;
+      white-space: nowrap;
+    }
+
+    .kbd {
+      background: rgba(255, 255, 255, 0.14);
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-weight: 600;
+      font-size: 11px;
+      color: #fff;
+    }
+
+    /* TOAST */
+    .toast-banner {
+      position: absolute;
+      top: 76px;
+      left: 50%;
+      transform: translateX(-50%);
+      padding: 8px 18px;
+      font-size: 13px;
+      font-weight: 600;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.22s ease;
+      z-index: 20;
+    }
+
+    .toast-banner.show {
+      opacity: 1;
+    }
+  </style>
+</head>
+<body>
+<div id="app">
+  <canvas id="townCanvas"></canvas>
+
+  <!-- TOP BAR -->
+  <div class="top-bar">
+    <div class="glass-panel top-group">
+      <div class="title-badge">
+        <span>🏘️ TOWNSCAPER : CANTILEVER</span>
+      </div>
+      <span class="subtitle-tag">Realistic Architectural Sandbox</span>
+      <select id="presetSelect" class="ui-select" title="Load Architectural Town Preset">
+        <option value="port">Preset: Port Cantilever (Canal & Bridge)</option>
+        <option value="arch">Preset: Venetian Grand Archway</option>
+        <option value="spire">Preset: Island Lighthouse Tower</option>
+        <option value="empty">Preset: Open Sea (Blank Canvas)</option>
+      </select>
+    </div>
+
+    <div class="glass-panel top-group">
+      <button class="ui-btn" id="btnStressView" title="Toggle Structural Stress Overlay (S)">
+        📐 Stress Overlay: OFF
+      </button>
+      <button class="ui-btn active-toggle" id="btnPhysicsToggle" title="Toggle Gravity & Cantilever Collapse Limits">
+        ⚖️ Gravity Limits: ON
+      </button>
+      <button class="ui-btn" id="btnUndoTop" title="Undo Last Placed Block (Z or Backspace)">
+        ↶ Undo (Z)
+      </button>
+      <button class="ui-btn" id="btnShare" title="Copy Shareable Town URL">
+        🔗 Share
+      </button>
+      <button class="ui-btn" id="btnClear" title="Clear All">
+        ✕ Clear
+      </button>
+    </div>
+  </div>
+
+  <!-- LEFT DOCK: BLOCK TYPES, PALETTE & QUICK UNDO -->
+  <div class="glass-panel palette-dock" id="paletteDock">
+    <div class="dock-section-title">Type</div>
+    <div style="display:flex; flex-direction:column; gap:5px;" id="typeBtnGroup">
+      <button class="type-btn active" data-type="standard" title="House / Building [Q]">🏠</button>
+      <button class="type-btn" data-type="balcony" title="Balcony Block (Wrought-Iron Railing) [W]">🏛️</button>
+      <button class="type-btn" data-type="fountain" title="Fountain Block (Carved Stone Basin) [E]">⛲</button>
+      <button class="type-btn" data-type="garden" title="Garden Terrace (Cypress & Planters) [R]">🌿</button>
+      <button class="type-btn" data-type="arcade" title="Arched Colonnade / Loggia [T]">⛩️</button>
+    </div>
+
+    <div class="palette-divider"></div>
+    <div class="dock-section-title">Color</div>
+    <div style="display:flex; flex-direction:column; gap:5px;" id="swatchContainer"></div>
+
+    <div class="palette-divider"></div>
+    <button class="action-icon-btn" id="btnQuickUndo" title="Undo Last Block (Press Z or click)">
+      ↶
+      <span class="undo-counter" id="undoBadge" style="display:none;">0</span>
+    </button>
+    <button class="action-icon-btn" id="btnEraserTool" title="Eraser Tool (Click to remove blocks, or press X)">
+      ✂
+    </button>
+  </div>
+
+  <!-- RIGHT PANEL: SUN & TELEMETRY -->
+  <div class="glass-panel right-dock">
+    <div class="dock-header">☀️ Natural Sun & Lighting</div>
+    <div>
+      <div class="stat-row" style="margin-bottom: 5px;">
+        <span id="timeLabel">Golden Afternoon</span>
+        <span class="stat-val" id="clockLabel">15:30</span>
+      </div>
+      <input type="range" id="sunSlider" min="0" max="100" value="58" />
+    </div>
+
+    <div class="dock-header" style="margin-top: 4px;">🏗️ Structural Physics</div>
+    <div class="stat-row">
+      <span>Blocks & Piers</span>
+      <span class="stat-val" id="statBlocks">0</span>
+    </div>
+    <div class="stat-row">
+      <span>Auto-Arches & Struts</span>
+      <span class="stat-val" id="statSupports" style="color:#38bdf8;">0</span>
+    </div>
+    <div class="stat-row">
+      <span>Max Cantilever Stress</span>
+      <span class="stat-val" id="statStress" style="color:#34d399;">0%</span>
+    </div>
+
+    <div class="dock-header" style="margin-top: 4px;">Hover Target</div>
+    <div id="hoverInfo" style="font-size: 11px; color: #cbd5e1; line-height: 1.4; min-height: 32px;">
+      Click water to raise a stone pier, or click any building face to stack & cantilever.
+    </div>
+  </div>
+
+  <!-- TOAST -->
+  <div id="toast" class="glass-panel toast-banner">Block Undone</div>
+
+  <!-- BOTTOM CONTROLS BAR -->
+  <div class="glass-panel bottom-pill">
+    <span><span class="kbd">Left Click</span> Place Block</span>
+    <span><span class="kbd">Right Click</span> or <span class="kbd">Z</span> Undo Block</span>
+    <span><span class="kbd">Q / W / E / R / T</span> Switch Block Type</span>
+    <span><span class="kbd">Drag</span> Orbit 3D</span>
+    <span><span class="kbd">Scroll</span> Zoom</span>
+  </div>
+</div>
+
+<script>
+(() => {
+  // ============================================================================
+  // 1. REALISTIC MEDITERRANEAN ARCHITECTURAL PALETTE & BLOCK TYPES
+  // ============================================================================
+  const PALETTE = [
+    { id: 0, name: 'Siena Terracotta',  wall: '#b85438', dark: '#6e2b1b', light: '#d16a4f', roof: '#7a2816' },
+    { id: 1, name: 'Tuscan Ochre',      wall: '#cf9842', dark: '#7d541c', light: '#e2ac58', roof: '#8f3319' },
+    { id: 2, name: 'Travertine Stone',  wall: '#ded9c3', dark: '#9c957e', light: '#f4f0e1', roof: '#9e4324' },
+    { id: 3, name: 'Coastal Blue Slate',wall: '#4e6e8a', dark: '#2b4254', light: '#6c8ea8', roof: '#263645' },
+    { id: 4, name: 'Cypress Sage',      wall: '#678c74', dark: '#3c5a47', light: '#86ab93', roof: '#75321c' },
+    { id: 5, name: 'Verona Rose',       wall: '#b56d70', dark: '#733c3f', light: '#cc878a', roof: '#5e232b' },
+    { id: 6, name: 'Aegean Cobalt',     wall: '#346b8f', dark: '#1c425c', light: '#508ab0', roof: '#1a3345' },
+    { id: 7, name: 'Weathered Plum',    wall: '#73595f', dark: '#423136', light: '#8f7279', roof: '#3b232a' }
+  ];
+
+  const BLOCK_TYPES = [
+    { id: 'standard', name: 'House', icon: '🏠', desc: 'Textured wall, recessed windows & terracotta roof' },
+    { id: 'balcony',  name: 'Balcony', icon: '🏛️', desc: 'Cantilevered stone balcony & dark wrought-iron railing' },
+    { id: 'fountain', name: 'Fountain', icon: '⛲', desc: 'Sculpted stone basin with flowing water spray' },
+    { id: 'garden',   name: 'Pergola', icon: '🌿', desc: 'Garden terrace with stone balustrade & cypress' },
+    { id: 'arcade',   name: 'Colonnade', icon: '⛩️', desc: 'Classical open arched colonnade' }
+  ];
+
+  const GRID_RADIUS = 8;
+  const MAX_HEIGHT = 12;
+  const BLOCK_SIZE = 34; // World units X/Z
+  const BLOCK_HEIGHT = 28; // World units Y
+
+  // ============================================================================
+  // 2. AUDIO SYNTHESIZER
+  // ============================================================================
+  class TownAudio {
+    constructor() {
+      this.ctx = null;
+      this.scale = [261.63, 293.66, 329.63, 392.00, 440.00, 523.25, 587.33, 659.25, 783.99, 880.00, 1046.50, 1174.66];
+    }
+    init() {
+      if (!this.ctx) {
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        if (AudioCtx) this.ctx = new AudioCtx();
+      }
+      if (this.ctx && this.ctx.state === 'suspended') this.ctx.resume();
+    }
+    plop(yLevel, isPier = false) {
+      this.init();
+      if (!this.ctx) return;
+      const now = this.ctx.currentTime;
+      const baseFreq = isPier ? 196.0 : this.scale[Math.min(this.scale.length - 1, Math.max(0, yLevel))];
+
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      osc.type = isPier ? 'triangle' : 'sine';
+      osc.frequency.setValueAtTime(baseFreq * 0.72, now);
+      osc.frequency.exponentialRampToValueAtTime(baseFreq, now + 0.045);
+
+      gain.gain.setValueAtTime(0.18, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.22);
+      osc.connect(gain);
+      gain.connect(this.ctx.destination);
+      osc.start(now);
+      osc.stop(now + 0.23);
+
+      const osc2 = this.ctx.createOscillator();
+      const gain2 = this.ctx.createGain();
+      osc2.type = 'triangle';
+      osc2.frequency.setValueAtTime(baseFreq * 2.0, now + 0.02);
+      gain2.gain.setValueAtTime(0.04, now + 0.02);
+      gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.16);
+      osc2.connect(gain2);
+      gain2.connect(this.ctx.destination);
+      osc2.start(now + 0.02);
+      osc2.stop(now + 0.17);
+    }
+    removePop(yLevel) {
+      this.init();
+      if (!this.ctx) return;
+      const now = this.ctx.currentTime;
+      const freq = this.scale[Math.min(this.scale.length - 1, Math.max(0, yLevel))];
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(freq, now);
+      osc.frequency.exponentialRampToValueAtTime(freq * 0.55, now + 0.12);
+      gain.gain.setValueAtTime(0.15, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.13);
+      osc.connect(gain);
+      gain.connect(this.ctx.destination);
+      osc.start(now);
+      osc.stop(now + 0.14);
+    }
+    collapseSplash() {
+      this.init();
+      if (!this.ctx) return;
+      const now = this.ctx.currentTime;
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(130, now);
+      osc.frequency.exponentialRampToValueAtTime(36, now + 0.45);
+      gain.gain.setValueAtTime(0.2, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.48);
+      osc.connect(gain);
+      gain.connect(this.ctx.destination);
+      osc.start(now);
+      osc.stop(now + 0.5);
+    }
+  }
+
+  const audio = new TownAudio();
+
+  // ============================================================================
+  // 3. STATE, STORAGE & CAMERA MOMENTUM
+  // ============================================================================
+  const canvas = document.getElementById('townCanvas');
+  const ctx = canvas.getContext('2d');
+  let width = window.innerWidth;
+  let height = window.innerHeight;
+
+  let voxels = new Map();
+  let undoStack = [];
+  let selectedColor = 0;
+  let activeBlockType = 'standard';
+  let activeTool = 'build'; // 'build' or 'erase'
+  let showStressOverlay = false;
+  let gravityEnabled = true;
+  let sunSliderVal = 58;
+  let animTime = 0;
+
+  const camera = {
+    yaw: 0.68,
+    pitch: 0.54,
+    zoom: 1.05,
+    targetZoom: 1.05,
+    panX: 0,
+    panY: 55,
+    velYaw: 0,
+    velPitch: 0,
+    velPanX: 0,
+    velPanY: 0
+  };
+
+  let ripples = [];
+  let fallingBlocks = [];
+  let mortarPuffs = [];
+
+  function keyOf(x, y, z) { return `${x},${y},${z}`; }
+  function hasVoxel(x, y, z) { return voxels.has(keyOf(x, y, z)); }
+  function getVoxel(x, y, z) { return voxels.get(keyOf(x, y, z)); }
+
+  // Build Swatch Palette UI
+  const swatchContainer = document.getElementById('swatchContainer');
+  PALETTE.forEach((p, idx) => {
+    const btn = document.createElement('button');
+    btn.className = 'swatch-btn' + (idx === selectedColor ? ' active' : '');
+    btn.style.backgroundColor = p.wall;
+    btn.title = `${p.name} [${idx + 1}]`;
+    btn.addEventListener('click', () => {
+      selectedColor = idx;
+      activeTool = 'build';
+      document.getElementById('btnEraserTool').classList.remove('active-tool');
+      document.querySelectorAll('.swatch-btn').forEach((b, i) => b.classList.toggle('active', i === idx));
+      audio.plop(idx, false);
+    });
+    swatchContainer.appendChild(btn);
+  });
+
+  // Block Type Buttons
+  document.querySelectorAll('.type-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      activeBlockType = btn.dataset.type;
+      activeTool = 'build';
+      document.getElementById('btnEraserTool').classList.remove('active-tool');
+      document.querySelectorAll('.type-btn').forEach(b => b.classList.toggle('active', b === btn));
+      showToast(`Block Type: ${BLOCK_TYPES.find(t => t.id === activeBlockType).name}`);
+      audio.plop(3, false);
+    });
+  });
+
+  function resize() {
+    width = window.innerWidth;
+    height = window.innerHeight;
+    const dpr = window.devicePixelRatio || 1;
+    canvas.width = width * dpr;
+    canvas.height = height * dpr;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+  window.addEventListener('resize', resize);
+  resize();
+
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    clearTimeout(showToast._t);
+    showToast._t = setTimeout(() => { t.classList.remove('show'); }, 2000);
+  }
+
+  // ============================================================================
+  // 4. 3D PROJECTION & REALISTIC LIGHTING ENGINE
+  // ============================================================================
+  function project3D(wx, wy, wz) {
+    const cosY = Math.cos(camera.yaw), sinY = Math.sin(camera.yaw);
+    const rx = wx * cosY - wz * sinY;
+    const rz = wx * sinY + wz * cosY;
+
+    const cosP = Math.cos(camera.pitch), sinP = Math.sin(camera.pitch);
+    const sy = -wy * cosP + rz * sinP;
+    const depth = wy * sinP + rz * cosP;
+
+    return {
+      x: width / 2 + camera.panX + rx * camera.zoom,
+      y: height / 2 + camera.panY + sy * camera.zoom,
+      depth
+    };
+  }
+
+  function voxelCenterWorld(gx, gy, gz) {
+    return {
+      x: gx * BLOCK_SIZE,
+      y: gy * BLOCK_HEIGHT,
+      z: gz * BLOCK_SIZE
+    };
+  }
+
+  function getAtmosphere() {
+    const t = sunSliderVal / 100;
+    const sunAzimuth = (t - 0.5) * Math.PI * 1.5;
+    const isNight = t > 0.82 || t < 0.12;
+    const isSunset = (t >= 0.68 && t <= 0.85) || (t >= 0.08 && t <= 0.22);
+
+    let skyTop, skyBot, waterDeep, waterShallow, lightIntensity;
+    if (isNight) {
+      skyTop = '#0a101d';
+      skyBot = '#131e33';
+      waterDeep = '#091322';
+      waterShallow = '#122238';
+      lightIntensity = 0.42;
+    } else if (isSunset) {
+      skyTop = '#223254';
+      skyBot = '#d46a4d';
+      waterDeep = '#16283b';
+      waterShallow = '#2b4763';
+      lightIntensity = 0.82;
+    } else {
+      skyTop = '#4a7fa8';
+      skyBot = '#b8d8f0';
+      waterDeep = '#14344d';
+      waterShallow = '#245678';
+      lightIntensity = 1.0;
+    }
+
+    return { t, sunAzimuth, isNight, isSunset, skyTop, skyBot, waterDeep, waterShallow, lightIntensity };
+  }
+
+  // ============================================================================
+  // 5. PROCEDURAL ARCHITECTURE & CANTILEVER PHYSICS
+  // ============================================================================
+  function rebuildArchitectureAndPhysics(triggerCollapse = true) {
+    let supportStructuresCount = 0;
+    let peakStress = 0;
+
+    for (const v of voxels.values()) {
+      v.hasRoof = !hasVoxel(v.x, v.y + 1, v.z) && v.y > 0 && v.blockType !== 'fountain' && v.blockType !== 'garden';
+      v.isGarden = (v.blockType === 'garden');
+      v.archDirs = [];
+      v.braceDir = null;
+      v.supported = false;
+      v.stress = 0;
+      v.chainDist = 999;
+    }
+
+    for (const v of voxels.values()) {
+      if (v.y === 0) {
+        v.supported = true;
+        v.chainDist = 0;
+        v.stress = 8;
+      }
+    }
+
+    const dirs4 = [
+      { dx: 1, dz: 0 },
+      { dx: -1, dz: 0 },
+      { dx: 0, dz: 1 },
+      { dx: 0, dz: -1 }
+    ];
+
+    let changed = true, pass = 0;
+    while (changed && pass < 24) {
+      changed = false;
+      pass++;
+      for (const v of voxels.values()) {
+        if (v.y === 0) continue;
+
+        const below = getVoxel(v.x, v.y - 1, v.z);
+        if (below && below.supported) {
+          const candDist = below.chainDist;
+          const candStress = Math.min(95, below.stress + 5 + candDist * 18);
+          if (!v.supported || candDist < v.chainDist) {
+            v.supported = true;
+            v.chainDist = candDist;
+            v.stress = candStress;
+            changed = true;
+          }
+        }
+
+        for (const d of dirs4) {
+          const nb = getVoxel(v.x + d.dx, v.y, v.z + d.dz);
+          if (nb && nb.supported) {
+            const candDist = nb.chainDist + 1;
+            if (!v.supported || candDist < v.chainDist) {
+              v.supported = true;
+              v.chainDist = candDist;
+              v.stress = Math.min(130, 28 * candDist + v.y * 2);
+              changed = true;
+            }
+          }
+        }
+      }
+    }
+
+    for (const v of voxels.values()) {
+      if (v.y === 0) continue;
+      const hasBelow = hasVoxel(v.x, v.y - 1, v.z);
+
+      if (v.hasRoof) {
+        let higherNeighbors = 0;
+        for (const d of dirs4) {
+          if (hasVoxel(v.x + d.dx, v.y + 1, v.z + d.dz)) higherNeighbors++;
+        }
+        if ((!hasBelow && higherNeighbors >= 1) || higherNeighbors >= 3) {
+          v.hasRoof = false;
+          v.isGarden = true;
+        }
+      }
+
+      if (!hasBelow) {
+        const eSup = hasVoxel(v.x + 1, v.y, v.z) && (hasVoxel(v.x + 1, v.y - 1, v.z) || getVoxel(v.x + 1, v.y, v.z).chainDist < v.chainDist);
+        const wSup = hasVoxel(v.x - 1, v.y, v.z) && (hasVoxel(v.x - 1, v.y - 1, v.z) || getVoxel(v.x - 1, v.y, v.z).chainDist < v.chainDist);
+        const sSup = hasVoxel(v.x, v.y, v.z + 1) && (hasVoxel(v.x, v.y - 1, v.z + 1) || getVoxel(v.x, v.y, v.z + 1).chainDist < v.chainDist);
+        const nSup = hasVoxel(v.x, v.y, v.z - 1) && (hasVoxel(v.x, v.y - 1, v.z - 1) || getVoxel(v.x, v.y, v.z - 1).chainDist < v.chainDist);
+
+        if ((eSup && wSup) || (sSup && nSup)) {
+          v.stress = Math.max(18, v.stress - 40);
+          if (eSup) v.archDirs.push({ dx: 1, dz: 0 });
+          if (wSup) v.archDirs.push({ dx: -1, dz: 0 });
+          if (sSup) v.archDirs.push({ dx: 0, dz: 1 });
+          if (nSup) v.archDirs.push({ dx: 0, dz: -1 });
+          supportStructuresCount++;
+        } else {
+          for (const d of dirs4) {
+            if (hasVoxel(v.x + d.dx, v.y - 1, v.z + d.dz)) {
+              v.braceDir = { dx: d.dx, dz: d.dz };
+              v.stress = Math.max(24, v.stress - 24);
+              supportStructuresCount++;
+              break;
+            }
+          }
+        }
+      }
+
+      if (v.stress > peakStress) peakStress = v.stress;
+    }
+
+    if (gravityEnabled && triggerCollapse) {
+      const doomed = [];
+      for (const v of voxels.values()) {
+        if (!v.supported || v.stress > 100) doomed.push(v);
+      }
+
+      if (doomed.length > 0) {
+        for (const dv of doomed) {
+          voxels.delete(keyOf(dv.x, dv.y, dv.z));
+          const wc = voxelCenterWorld(dv.x, dv.y, dv.z);
+          fallingBlocks.push({
+            wx: wc.x,
+            wy: wc.y,
+            wz: wc.z,
+            vx: (Math.random() - 0.5) * 2.2,
+            vy: -1.5,
+            vz: (Math.random() - 0.5) * 2.2,
+            colorId: dv.colorId,
+            rot: 0,
+            vRot: (Math.random() - 0.5) * 0.15
+          });
+        }
+        audio.collapseSplash();
+        showToast('⚠️ Unsupported overhang collapsed! Press Z to undo.');
+        rebuildArchitectureAndPhysics(false);
+        return;
+      }
+    }
+
+    document.getElementById('statBlocks').textContent = voxels.size;
+    document.getElementById('statSupports').textContent = supportStructuresCount;
+    const stEl = document.getElementById('statStress');
+    stEl.textContent = `${Math.round(peakStress)}%`;
+    stEl.style.color = peakStress > 80 ? '#f43f5e' : peakStress > 55 ? '#fbbf24' : '#34d399';
+
+    updateUndoBadge();
+    updateUrlHash();
+  }
+
+  // ============================================================================
+  // 6. EASY UNDO SYSTEM & URL HASH
+  // ============================================================================
+  function saveUndoSnapshot() {
+    const snap = Array.from(voxels.values()).map(v => ({
+      x: v.x, y: v.y, z: v.z, colorId: v.colorId, blockType: v.blockType || 'standard'
+    }));
+    undoStack.push(JSON.stringify(snap));
+    if (undoStack.length > 50) undoStack.shift();
+    updateUndoBadge();
+  }
+
+  function performUndo() {
+    if (undoStack.length === 0) {
+      showToast('Nothing to undo');
+      return;
+    }
+    const raw = JSON.parse(undoStack.pop());
+    voxels.clear();
+    for (const b of raw) placeBlockRaw(b.x, b.y, b.z, b.colorId, b.blockType || 'standard');
+    rebuildArchitectureAndPhysics(false);
+    updateUndoBadge();
+    showToast('↶ Undid last block');
+    audio.removePop(3);
+  }
+
+  function updateUndoBadge() {
+    const badge = document.getElementById('undoBadge');
+    if (undoStack.length > 0) {
+      badge.style.display = 'block';
+      badge.textContent = undoStack.length;
+    } else {
+      badge.style.display = 'none';
+    }
+  }
+
+  function updateUrlHash() {
+    if (voxels.size === 0) {
+      history.replaceState(null, '', window.location.pathname);
+      return;
+    }
+    const entries = [];
+    for (const v of voxels.values()) {
+      const typeCode = v.blockType ? v.blockType[0] : 's';
+      entries.push(`${v.x + 8}.${v.y}.${v.z + 8}.${v.colorId}.${typeCode}`);
+    }
+    const encoded = btoa(entries.join('_')).replace(/=/g, '');
+    history.replaceState(null, '', `#${encoded}`);
+  }
+
+  function loadFromUrlHash() {
+    const hash = window.location.hash.slice(1);
+    if (!hash || hash.length < 4) return false;
+    try {
+      const raw = atob(hash);
+      const parts = raw.split('_');
+      const loaded = new Map();
+      const codeToType = { s: 'standard', b: 'balcony', f: 'fountain', g: 'garden', a: 'arcade' };
+      for (const p of parts) {
+        const [x, y, z, c, t] = p.split('.');
+        const nx = Number(x), ny = Number(y), nz = Number(z), nc = Number(c);
+        if (!isNaN(nx) && !isNaN(ny) && !isNaN(nz)) {
+          const gx = nx - 8, gz = nz - 8;
+          loaded.set(keyOf(gx, ny, gz), {
+            x: gx, y: ny, z: gz, colorId: nc || 0,
+            blockType: codeToType[t] || 'standard',
+            scaleAnim: 1, scaleVel: 0, stress: 0, archDirs: []
+          });
+        }
+      }
+      if (loaded.size > 0) {
+        voxels = loaded;
+        rebuildArchitectureAndPhysics(false);
+        return true;
+      }
+    } catch (e) {}
+    return false;
+  }
+
+  // ============================================================================
+  // 7. PRESET TOWNS WITH NEW ARCHITECTURAL BLOCKS
+  // ============================================================================
+  function placeBlockRaw(x, y, z, colorId, blockType = 'standard') {
+    voxels.set(keyOf(x, y, z), {
+      x, y, z, colorId, blockType,
+      scaleAnim: 1.0,
+      scaleVel: 0,
+      stress: 0,
+      archDirs: []
+    });
+  }
+
+  function loadPreset(name) {
+    voxels.clear();
+    ripples = [];
+    fallingBlocks = [];
+    undoStack = [];
+
+    if (name === 'port') {
+      // West Pier & Clocktower
+      for (let x = -3; x <= -1; x++) {
+        for (let z = -2; z <= 2; z++) placeBlockRaw(x, 0, z, 2, 'standard');
+      }
+      for (let y = 1; y <= 6; y++) placeBlockRaw(-2, y, 0, y % 2 === 0 ? 2 : 0, 'standard');
+      placeBlockRaw(-2, 2, -1, 1, 'balcony');
+      placeBlockRaw(-2, 3, -1, 1, 'standard');
+      placeBlockRaw(-3, 1, 0, 4, 'arcade');
+      placeBlockRaw(-3, 2, 0, 4, 'balcony');
+      placeBlockRaw(-2, 1, 1, 3, 'arcade');
+      placeBlockRaw(-2, 2, 1, 3, 'balcony');
+      placeBlockRaw(-1, 1, 1, 3, 'standard');
+      placeBlockRaw(-1, 2, 1, 3, 'garden');
+
+      // East Pier with Classical Fountain Plaza
+      for (let x = 2; x <= 4; x++) {
+        for (let z = -1; z <= 2; z++) placeBlockRaw(x, 0, z, 2, 'standard');
+      }
+      // Sculpted stone fountain in east plaza
+      placeBlockRaw(3, 1, -1, 2, 'fountain');
+
+      placeBlockRaw(3, 1, 1, 0, 'arcade');
+      placeBlockRaw(3, 2, 1, 0, 'balcony');
+      placeBlockRaw(3, 3, 1, 0, 'standard');
+      placeBlockRaw(2, 1, 1, 1, 'standard');
+      placeBlockRaw(2, 2, 1, 1, 'balcony');
+      placeBlockRaw(4, 1, 0, 4, 'garden');
+
+      // Stone Arch Bridge spanning canal x=0, 1 at y=2
+      placeBlockRaw(0, 2, 1, 2, 'standard');
+      placeBlockRaw(1, 2, 1, 2, 'standard');
+
+      // Cantilevered sea balcony
+      placeBlockRaw(-2, 3, -2, 5, 'balcony');
+
+      ripples.push({ x: 0, z: 0, r: 8, maxR: 140, alpha: 0.7 });
+    } else if (name === 'arch') {
+      for (let z = -2; z <= 2; z++) {
+        placeBlockRaw(-3, 0, z, 2);
+        placeBlockRaw(-2, 0, z, 2);
+        placeBlockRaw(2, 0, z, 2);
+        placeBlockRaw(3, 0, z, 2);
+      }
+      placeBlockRaw(-3, 1, 0, 0, 'arcade');
+      placeBlockRaw(3, 1, 0, 1, 'arcade');
+      placeBlockRaw(-2, 1, 0, 0, 'standard');
+      placeBlockRaw(2, 1, 0, 1, 'standard');
+      placeBlockRaw(-2, 2, 0, 0, 'balcony');
+      placeBlockRaw(2, 2, 0, 1, 'balcony');
+
+      // Bridge span with fountain & garden
+      placeBlockRaw(-1, 2, 0, 2, 'standard');
+      placeBlockRaw(0, 2, 0, 2, 'fountain');
+      placeBlockRaw(1, 2, 0, 2, 'standard');
+      placeBlockRaw(0, 3, -1, 5, 'garden');
+    } else if (name === 'spire') {
+      for (let x = -1; x <= 1; x++) {
+        for (let z = -1; z <= 1; z++) placeBlockRaw(x, 0, z, 2);
+      }
+      placeBlockRaw(0, 1, 0, 2, 'arcade');
+      placeBlockRaw(0, 2, 0, 2, 'standard');
+      placeBlockRaw(0, 3, 0, 2, 'balcony');
+      placeBlockRaw(0, 4, 0, 2, 'standard');
+      placeBlockRaw(0, 5, 0, 0, 'standard');
+      placeBlockRaw(0, 6, 0, 2, 'standard');
+      placeBlockRaw(1, 2, 0, 6, 'balcony');
+      placeBlockRaw(-1, 2, 0, 1, 'balcony');
+      placeBlockRaw(0, 3, 1, 4, 'garden');
+    }
+
+    rebuildArchitectureAndPhysics(false);
+  }
+
+  // ============================================================================
+  // 8. REALISTIC 3D ARCHITECTURAL RENDERER
+  // ============================================================================
+  let interactiveFaces = [];
+
+  function shadeHex(hex, factor) {
+    const num = parseInt(hex.slice(1), 16);
+    const r = Math.min(255, Math.max(0, Math.round(((num >> 16) & 255) * factor)));
+    const g = Math.min(255, Math.max(0, Math.round(((num >> 8) & 255) * factor)));
+    const b = Math.min(255, Math.max(0, Math.round((num & 255) * factor)));
+    return `rgb(${r},${g},${b})`;
+  }
+
+  function drawPolygon(pts, fill, stroke = null, lineWidth = 1) {
+    ctx.beginPath();
+    ctx.moveTo(pts[0].x, pts[0].y);
+    for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i].x, pts[i].y);
+    ctx.closePath();
+    if (fill) {
+      ctx.fillStyle = fill;
+      ctx.fill();
+    }
+    if (stroke) {
+      ctx.strokeStyle = stroke;
+      ctx.lineWidth = lineWidth;
+      ctx.stroke();
+    }
+  }
+
+  function pointInPoly(px, py, pts) {
+    let inside = false;
+    for (let i = 0, j = pts.length - 1; i < pts.length; j = i++) {
+      const xi = pts[i].x, yi = pts[i].y, xj = pts[j].x, yj = pts[j].y;
+      const intersect = ((yi > py) !== (yj > py)) && (px < (xj - xi) * (py - yi) / (yj - yi + 0.00001) + xi);
+      if (intersect) inside = !inside;
+    }
+    return inside;
+  }
+
+  function updateCameraPhysics() {
+    if (!pointerDown) {
+      camera.yaw += camera.velYaw;
+      camera.pitch = Math.max(0.22, Math.min(1.28, camera.pitch + camera.velPitch));
+      camera.panX += camera.velPanX;
+      camera.panY += camera.velPanY;
+
+      camera.velYaw *= 0.92;
+      camera.velPitch *= 0.92;
+      camera.velPanX *= 0.90;
+      camera.velPanY *= 0.90;
+    }
+    camera.zoom += (camera.targetZoom - camera.zoom) * 0.16;
+  }
+
+  function renderScene() {
+    animTime += 1 / 60;
+    updateCameraPhysics();
+    const atmos = getAtmosphere();
+    interactiveFaces = [];
+
+    // 1. Realistic Sky & Deep Ocean Gradient
+    const bgGrad = ctx.createLinearGradient(0, 0, 0, height);
+    bgGrad.addColorStop(0, atmos.skyTop);
+    bgGrad.addColorStop(0.38, atmos.skyBot);
+    bgGrad.addColorStop(0.42, atmos.waterShallow);
+    bgGrad.addColorStop(1, atmos.waterDeep);
+    ctx.fillStyle = bgGrad;
+    ctx.fillRect(0, 0, width, height);
+
+    // 2. Realistic Water Surface & Subtle Caustic Shimmer
+    const waveT = animTime * 1.5;
+    for (let gx = -GRID_RADIUS; gx <= GRID_RADIUS; gx++) {
+      for (let gz = -GRID_RADIUS; gz <= GRID_RADIUS; gz++) {
+        if (Math.hypot(gx, gz) > GRID_RADIUS + 0.4) continue;
+        const wc = voxelCenterWorld(gx, 0, gz);
+        const wy = -BLOCK_HEIGHT * 0.45;
+        const p = project3D(wc.x, wy, wc.z);
+
+        const wave = Math.sin(waveT + gx * 0.35 + gz * 0.45) * 0.5 + 0.5;
+        ctx.fillStyle = `rgba(140, 195, 230, ${0.06 + wave * 0.06})`;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, (1.8 + wave * 0.6) * camera.zoom, 0, Math.PI * 2);
+        ctx.fill();
+
+        if (!hasVoxel(gx, 0, gz)) {
+          const half = BLOCK_SIZE * 0.5;
+          interactiveFaces.push({
+            poly: [
+              project3D(wc.x - half, wy, wc.z - half),
+              project3D(wc.x + half, wy, wc.z - half),
+              project3D(wc.x + half, wy, wc.z + half),
+              project3D(wc.x - half, wy, wc.z + half)
+            ],
+            depth: p.depth - 500,
+            voxel: null,
+            placePos: { x: gx, y: 0, z: gz },
+            isWater: true
+          });
+        }
+      }
+    }
+
+    // 3. Expanding Soft Water Ripples
+    for (let i = ripples.length - 1; i >= 0; i--) {
+      const rp = ripples[i];
+      rp.r += 1.3;
+      rp.alpha -= 0.011;
+      if (rp.alpha <= 0) {
+        ripples.splice(i, 1);
+        continue;
+      }
+      ctx.strokeStyle = `rgba(180, 220, 245, ${rp.alpha * 0.6})`;
+      ctx.lineWidth = 1.4;
+      ctx.beginPath();
+      for (let a = 0; a <= Math.PI * 2 + 0.2; a += 0.25) {
+        const wx = rp.x * BLOCK_SIZE + Math.cos(a) * rp.r;
+        const wz = rp.z * BLOCK_SIZE + Math.sin(a) * rp.r;
+        const pt = project3D(wx, -BLOCK_HEIGHT * 0.45, wz);
+        if (a === 0) ctx.moveTo(pt.x, pt.y);
+        else ctx.lineTo(pt.x, pt.y);
+      }
+      ctx.stroke();
+    }
+
+    // 4. Soft Directional Sun Shadows
+    const sunDirX = Math.cos(atmos.sunAzimuth) * 0.75;
+    const sunDirZ = Math.sin(atmos.sunAzimuth) * 0.75;
+    const shColor = atmos.isNight ? 'rgba(0, 0, 0, 0.16)' : 'rgba(8, 20, 36, 0.24)';
+    for (const v of voxels.values()) {
+      const wc = voxelCenterWorld(v.x, v.y, v.z);
+      const alt = (v.y + 0.5) * BLOCK_HEIGHT;
+      const sx = wc.x - sunDirX * alt, sz = wc.z - sunDirZ * alt;
+      const half = BLOCK_SIZE * 0.52, wy = -BLOCK_HEIGHT * 0.45;
+      drawPolygon([
+        project3D(sx - half, wy, sz - half),
+        project3D(sx + half, wy, sz - half),
+        project3D(sx + half, wy, sz + half),
+        project3D(sx - half, wy, sz + half)
+      ], shColor);
+    }
+
+    // 5. Depth Sort Voxels
+    const sortedVoxels = Array.from(voxels.values()).map(v => {
+      if (Math.abs(1 - v.scaleAnim) > 0.001 || Math.abs(v.scaleVel) > 0.001) {
+        v.scaleVel += (1.0 - v.scaleAnim) * 0.28;
+        v.scaleVel *= 0.72;
+        v.scaleAnim += v.scaleVel;
+      } else {
+        v.scaleAnim = 1.0;
+      }
+      const wc = voxelCenterWorld(v.x, v.y, v.z);
+      return { v, wc, depth: project3D(wc.x, wc.y, wc.z).depth };
+    });
+    sortedVoxels.sort((a, b) => a.depth - b.depth);
+
+    // 6. Draw Realistic Blocks
+    for (const item of sortedVoxels) {
+      drawVoxelBlock(item.v, item.wc, atmos);
+    }
+
+    // 7. Falling Collapsed Blocks
+    for (let i = fallingBlocks.length - 1; i >= 0; i--) {
+      const fb = fallingBlocks[i];
+      fb.wx += fb.vx;
+      fb.wy += fb.vy;
+      fb.wz += fb.vz;
+      fb.vy -= 0.32;
+      fb.rot += fb.vRot;
+      const p = project3D(fb.wx, fb.wy, fb.wz);
+      ctx.save();
+      ctx.translate(p.x, p.y);
+      ctx.rotate(fb.rot);
+      const sz = 18 * camera.zoom;
+      ctx.fillStyle = PALETTE[fb.colorId].wall;
+      ctx.fillRect(-sz / 2, -sz / 2, sz, sz);
+      ctx.restore();
+      if (fb.wy < -BLOCK_HEIGHT * 0.5) {
+        ripples.push({ x: fb.wx / BLOCK_SIZE, z: fb.wz / BLOCK_SIZE, r: 4, maxR: 90, alpha: 0.8 });
+        fallingBlocks.splice(i, 1);
+      }
+    }
+
+    // 8. Mortar Placement Puffs
+    for (let i = mortarPuffs.length - 1; i >= 0; i--) {
+      const mp = mortarPuffs[i];
+      mp.wx += mp.vx;
+      mp.wy += mp.vy;
+      mp.wz += mp.vz;
+      mp.life -= 0.04;
+      if (mp.life <= 0) {
+        mortarPuffs.splice(i, 1);
+        continue;
+      }
+      const p = project3D(mp.wx, mp.wy, mp.wz);
+      ctx.fillStyle = `rgba(225, 230, 240, ${mp.life * 0.55})`;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, mp.r * mp.life * camera.zoom, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    drawHoverHighlight();
+  }
+
+  function drawVoxelBlock(v, wc, atmos) {
+    const s = v.scaleAnim;
+    const halfX = (BLOCK_SIZE * 0.5) * s;
+    const halfY = (BLOCK_HEIGHT * 0.5) * s;
+    const halfZ = (BLOCK_SIZE * 0.5) * s;
+    const isPier = (v.y === 0);
+    const pal = PALETTE[v.colorId];
+    const bType = v.blockType || 'standard';
+
+    let baseWall = isPier ? '#cbd5e1' : pal.wall;
+    if (showStressOverlay) {
+      baseWall = v.stress < 30 ? '#22c55e' : v.stress < 68 ? '#f59e0b' : '#ef4444';
+    }
+
+    const corners = {
+      tNW: project3D(wc.x - halfX, wc.y + halfY, wc.z - halfZ),
+      tNE: project3D(wc.x + halfX, wc.y + halfY, wc.z - halfZ),
+      tSE: project3D(wc.x + halfX, wc.y + halfY, wc.z + halfZ),
+      tSW: project3D(wc.x - halfX, wc.y + halfY, wc.z + halfZ),
+      bNW: project3D(wc.x - halfX, wc.y - halfY, wc.z - halfZ),
+      bNE: project3D(wc.x + halfX, wc.y - halfY, wc.z - halfZ),
+      bSE: project3D(wc.x + halfX, wc.y - halfY, wc.z + halfZ),
+      bSW: project3D(wc.x - halfX, wc.y - halfY, wc.z + halfZ)
+    };
+
+    const sides = [
+      { dir: 'N', dx: 0, dz: -1, pts: [corners.tNW, corners.tNE, corners.bNE, corners.bNW], shade: 0.72 },
+      { dir: 'S', dx: 0, dz: 1,  pts: [corners.tSW, corners.tSE, corners.bSE, corners.bSW], shade: 0.98 },
+      { dir: 'E', dx: 1, dz: 0,  pts: [corners.tNE, corners.tSE, corners.bSE, corners.bNE], shade: 0.88 },
+      { dir: 'W', dx: -1, dz: 0, pts: [corners.tNW, corners.tSW, corners.bSW, corners.bNW], shade: 0.65 }
+    ];
+    sides.forEach(f => {
+      f.midDepth = (f.pts[0].depth + f.pts[1].depth + f.pts[2].depth + f.pts[3].depth) * 0.25;
+    });
+    sides.sort((a, b) => a.midDepth - b.midDepth);
+
+    const frontSides = sides.slice(2);
+    const frontMostSide = frontSides[frontSides.length - 1];
+
+    // Front-facing visible wall faces
+    for (const side of frontSides) {
+      if (hasVoxel(v.x + side.dx, v.y, v.z + side.dz)) continue;
+      const lm = side.shade * atmos.lightIntensity;
+      const faceFill = shadeHex(baseWall, lm);
+      const edgeStroke = isPier ? '#475569' : shadeHex(baseWall, lm * 0.7);
+
+      // Realistic wall render (no cartoony outlines)
+      drawPolygon(side.pts, faceFill, edgeStroke, 1.0);
+
+      if (isPier) {
+        drawPierTexture(side.pts, atmos);
+      } else if (!showStressOverlay) {
+        if (bType === 'arcade') {
+          drawArcadeFacade(side.pts, atmos);
+        } else if (bType === 'balcony' && side === frontMostSide) {
+          drawBalconyFacade(side.pts, atmos, wc, side);
+        } else {
+          drawFacadeWindows(side.pts, v.y === 1, atmos.isNight);
+        }
+      }
+
+      interactiveFaces.push({
+        poly: side.pts,
+        depth: side.midDepth,
+        voxel: v,
+        placePos: { x: v.x + side.dx, y: v.y, z: v.z + side.dz }
+      });
+    }
+
+    // Contextual Timber Struts or Stone Arches underneath cantilevers
+    if (v.y > 0 && !hasVoxel(v.x, v.y - 1, v.z)) {
+      if (v.braceDir) {
+        const pU = project3D(wc.x, wc.y - halfY, wc.z);
+        const pW = project3D(
+          wc.x + v.braceDir.dx * BLOCK_SIZE * 0.48,
+          wc.y - halfY - BLOCK_HEIGHT * 0.82,
+          wc.z + v.braceDir.dz * BLOCK_SIZE * 0.48
+        );
+        ctx.strokeStyle = showStressOverlay ? '#f59e0b' : '#573d26';
+        ctx.lineWidth = 3.8 * camera.zoom;
+        ctx.lineCap = 'round';
+        ctx.beginPath();
+        ctx.moveTo(pU.x, pU.y);
+        ctx.lineTo(pW.x, pW.y);
+        ctx.stroke();
+      } else if (v.archDirs.length > 0) {
+        for (const ad of v.archDirs) {
+          const pC = project3D(wc.x, wc.y - halfY + 2, wc.z);
+          const pS = project3D(
+            wc.x + ad.dx * BLOCK_SIZE * 0.5,
+            wc.y - halfY - BLOCK_HEIGHT * 0.65,
+            wc.z + ad.dz * BLOCK_SIZE * 0.5
+          );
+          ctx.strokeStyle = '#b0b8c4';
+          ctx.lineWidth = 4 * camera.zoom;
+          ctx.beginPath();
+          ctx.moveTo(pC.x, pC.y);
+          ctx.quadraticCurveTo((pC.x + pS.x) / 2, pC.y, pS.x, pS.y);
+          ctx.stroke();
+        }
+      }
+    }
+
+    // Top Face (Roof, Fountain, Garden Terrace, or Cobblestone Pier Deck)
+    if (!hasVoxel(v.x, v.y + 1, v.z)) {
+      const topPts = [corners.tNW, corners.tNE, corners.tSE, corners.tSW];
+      const topDepth = (topPts[0].depth + topPts[1].depth + topPts[2].depth + topPts[3].depth) * 0.25 + 8;
+
+      let topFill = isPier ? '#d8d4c5' : v.isGarden ? '#3f6248' : shadeHex(baseWall, 1.05 * atmos.lightIntensity);
+      // NOTE: Realistic subtle dark seam, ZERO white line around top!
+      drawPolygon(topPts, topFill, isPier ? '#475569' : '#334155', 1);
+
+      if (isPier) {
+        drawCobblestoneDeck(topPts);
+      }
+
+      // ⛲ FOUNTAIN BLOCK: Carved tiered stone basin with animated flowing water
+      if (bType === 'fountain') {
+        drawFountain(wc, halfY, s, atmos);
+      }
+      // 🌿 GARDEN PERGOLA BLOCK: Stone balustrade & Mediterranean Cypress
+      else if (bType === 'garden' || v.isGarden) {
+        drawGardenTerrace(topPts, wc, halfY, s, atmos);
+      }
+      // 🏠 ROOF: Realistic Terracotta Barrel Tiles (NO WHITE LINES!)
+      else if (v.hasRoof && !showStressOverlay) {
+        drawRealisticRoof(corners, wc, halfX, halfY, s, pal.roof, atmos);
+      }
+
+      interactiveFaces.push({
+        poly: topPts,
+        depth: topDepth,
+        voxel: v,
+        placePos: { x: v.x, y: v.y + 1, z: v.z }
+      });
+    }
+  }
+
+  // ============================================================================
+  // 9. REALISTIC ARCHITECTURAL DETAILS (NO WHITE LINES, REALISTIC TEXTURES)
+  // ============================================================================
+
+  // Realistic Terracotta Barrel Tile Roof (Shaded ridgelines, NO white borders)
+  function drawRealisticRoof(corners, wc, halfX, halfY, s, roofHex, atmos) {
+    const roofPeakH = BLOCK_HEIGHT * 0.68 * s;
+    const rW = project3D(wc.x - halfX * 0.42, wc.y + halfY + roofPeakH, wc.z);
+    const rE = project3D(wc.x + halfX * 0.42, wc.y + halfY + roofPeakH, wc.z);
+
+    const slopes = [
+      { pts: [corners.tNW, corners.tNE, rE, rW], shade: 0.82 },
+      { pts: [corners.tSW, corners.tSE, rE, rW], shade: 1.02 },
+      { pts: [corners.tNW, corners.tSW, rW], shade: 0.70 },
+      { pts: [corners.tNE, corners.tSE, rE], shade: 0.90 }
+    ];
+    slopes.forEach(sl => {
+      sl.d = sl.pts.reduce((a, p) => a + p.depth, 0) / sl.pts.length;
+    });
+    slopes.sort((a, b) => a.d - b.d);
+
+    for (const sl of slopes) {
+      drawPolygon(
+        sl.pts,
+        shadeHex(roofHex, sl.shade * atmos.lightIntensity),
+        shadeHex(roofHex, 0.55 * atmos.lightIntensity), // Dark natural terracotta seam
+        1.0
+      );
+    }
+
+    // Weathered ridge tile seam along the crest (dark natural stone, NO white lines)
+    ctx.strokeStyle = shadeHex(roofHex, 0.45 * atmos.lightIntensity);
+    ctx.lineWidth = 2 * camera.zoom;
+    ctx.beginPath();
+    ctx.moveTo(rW.x, rW.y);
+    ctx.lineTo(rE.x, rE.y);
+    ctx.stroke();
+  }
+
+  // 🏛️ Balcony: Cantilevered Stone Slab with Wrought-Iron Balustrade & French Doors
+  function drawBalconyFacade(pts, atmos, wc, side) {
+    const lerpPt = (a, b, t) => ({ x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t });
+
+    // French Doors on wall behind balcony
+    const doorL = lerpPt(pts[0], pts[1], 0.32);
+    const doorR = lerpPt(pts[0], pts[1], 0.68);
+    const doorBL = lerpPt(pts[3], pts[2], 0.32);
+    const doorBR = lerpPt(pts[3], pts[2], 0.68);
+    drawPolygon(
+      [lerpPt(doorL, doorBL, 0.2), lerpPt(doorR, doorBR, 0.2), doorBR, doorBL],
+      '#1e293b',
+      '#475569',
+      1
+    );
+
+    // Cantilevered Stone Balcony Platform projecting outward
+    const bY1 = lerpPt(pts[3], pts[0], 0.12);
+    const bY2 = lerpPt(pts[2], pts[1], 0.12);
+    const outX = side.dx * 8 * camera.zoom;
+    const outY = (side.dz * 4 + 4) * camera.zoom;
+
+    const slabPts = [
+      lerpPt(bY1, bY2, 0.15),
+      lerpPt(bY1, bY2, 0.85),
+      { x: lerpPt(bY1, bY2, 0.85).x + outX, y: lerpPt(bY1, bY2, 0.85).y + outY },
+      { x: lerpPt(bY1, bY2, 0.15).x + outX, y: lerpPt(bY1, bY2, 0.15).y + outY }
+    ];
+    drawPolygon(slabPts, '#cfc9b6', '#78716c', 1.2);
+
+    // Decorative Wrought-Iron Railing
+    const railH = -12 * camera.zoom;
+    ctx.strokeStyle = '#1c1917';
+    ctx.lineWidth = 1.6;
+    ctx.beginPath();
+    // Railing top bar
+    ctx.moveTo(slabPts[3].x, slabPts[3].y + railH);
+    ctx.lineTo(slabPts[2].x, slabPts[2].y + railH);
+    // Baluster uprights
+    for (let t = 0; t <= 1; t += 0.2) {
+      const bx = slabPts[3].x + (slabPts[2].x - slabPts[3].x) * t;
+      const by = slabPts[3].y + (slabPts[2].y - slabPts[3].y) * t;
+      ctx.moveTo(bx, by);
+      ctx.lineTo(bx, by + railH);
+    }
+    ctx.stroke();
+  }
+
+  // ⛲ Fountain: Tiered Stone Basin with Flowing Water Spray
+  function drawFountain(wc, halfY, s, atmos) {
+    const fCenter = project3D(wc.x, wc.y + halfY, wc.z);
+    const r1 = 12 * camera.zoom * s;
+    const r2 = 6 * camera.zoom * s;
+
+    // Outer Stone Rim
+    ctx.fillStyle = shadeHex('#b8b09d', 0.9 * atmos.lightIntensity);
+    ctx.strokeStyle = '#57534e';
+    ctx.lineWidth = 1.2;
+    ctx.beginPath();
+    ctx.ellipse(fCenter.x, fCenter.y, r1, r1 * 0.55, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+
+    // Azure Water Pool inside basin
+    ctx.fillStyle = atmos.isNight ? '#0369a1' : '#38bdf8';
+    ctx.beginPath();
+    ctx.ellipse(fCenter.x, fCenter.y, r1 * 0.8, r1 * 0.44, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Central Tiered Stone Pedestal
+    const pTop = project3D(wc.x, wc.y + halfY + 10 * s, wc.z);
+    ctx.fillStyle = shadeHex('#ded9c3', atmos.lightIntensity);
+    ctx.beginPath();
+    ctx.ellipse(pTop.x, pTop.y, r2, r2 * 0.55, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+
+    // Animated Fountain Water Spray
+    const sprayPhase = Math.sin(animTime * 3.5);
+    ctx.strokeStyle = 'rgba(224, 242, 254, 0.85)';
+    ctx.lineWidth = 1.5;
+    for (let a = 0; a < Math.PI * 2; a += Math.PI / 3) {
+      const sprayX = Math.cos(a + animTime * 0.5) * (7 + sprayPhase);
+      const sprayZ = Math.sin(a + animTime * 0.5) * (7 + sprayPhase);
+      const sDrop = project3D(wc.x + sprayX, wc.y + halfY + 6, wc.z + sprayZ);
+      ctx.beginPath();
+      ctx.moveTo(pTop.x, pTop.y - 2);
+      ctx.quadraticCurveTo(pTop.x, pTop.y - (9 + sprayPhase * 2), sDrop.x, sDrop.y);
+      ctx.stroke();
+    }
+  }
+
+  // 🌿 Garden Terrace: Carved Stone Balustrade & Cypress Tree
+  function drawGardenTerrace(topPts, wc, halfY, s, atmos) {
+    // Sculpted Mediterranean Cypress Tree
+    const treeBase = project3D(wc.x - 4, wc.y + halfY, wc.z - 4);
+    const treeTop = project3D(wc.x - 4, wc.y + halfY + 22 * s, wc.z - 4);
+
+    // Slender Cypress Foliage
+    ctx.fillStyle = shadeHex('#2d5a3c', 0.9 * atmos.lightIntensity);
+    ctx.beginPath();
+    ctx.moveTo(treeTop.x, treeTop.y);
+    ctx.quadraticCurveTo(treeBase.x - 6 * camera.zoom, (treeTop.y + treeBase.y) / 2, treeBase.x, treeBase.y);
+    ctx.quadraticCurveTo(treeBase.x + 6 * camera.zoom, (treeTop.y + treeBase.y) / 2, treeTop.x, treeTop.y);
+    ctx.fill();
+
+    // Terracotta planters with flowers
+    const pot = project3D(wc.x + 7, wc.y + halfY, wc.z + 5);
+    ctx.fillStyle = '#b85438';
+    ctx.fillRect(pot.x - 3, pot.y - 4, 6, 4);
+    ctx.fillStyle = '#e11d48';
+    ctx.beginPath();
+    ctx.arc(pot.x, pot.y - 6, 2.5, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  // ⛩️ Arched Colonnade / Loggia Facade
+  function drawArcadeFacade(pts, atmos) {
+    const lerpPt = (a, b, t) => ({ x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t });
+
+    // Dark shaded interior recess
+    const inL = lerpPt(pts[0], pts[1], 0.2);
+    const inR = lerpPt(pts[0], pts[1], 0.8);
+    const inBL = lerpPt(pts[3], pts[2], 0.2);
+    const inBR = lerpPt(pts[3], pts[2], 0.8);
+    drawPolygon(
+      [lerpPt(inL, inBL, 0.15), lerpPt(inR, inBR, 0.15), inBR, inBL],
+      '#1e293b',
+      null
+    );
+
+    // Two classical stone columns supporting the arch
+    const col1 = [lerpPt(inL, inBL, 0.15), lerpPt(pts[0], pts[1], 0.32), lerpPt(pts[3], pts[2], 0.32), inBL];
+    const col2 = [lerpPt(pts[0], pts[1], 0.68), lerpPt(inR, inBR, 0.15), inBR, lerpPt(pts[3], pts[2], 0.68)];
+    drawPolygon(col1, shadeHex('#ded9c3', atmos.lightIntensity), '#78716c', 1);
+    drawPolygon(col2, shadeHex('#ded9c3', atmos.lightIntensity), '#78716c', 1);
+
+    // Stone arch curve above columns
+    const aPeak = lerpPt(pts[0], pts[1], 0.5);
+    ctx.strokeStyle = shadeHex('#ded9c3', atmos.lightIntensity * 1.05);
+    ctx.lineWidth = 3.5 * camera.zoom;
+    ctx.beginPath();
+    ctx.moveTo(col1[0].x, col1[0].y);
+    ctx.quadraticCurveTo(aPeak.x, aPeak.y + 4, col2[1].x, col2[1].y);
+    ctx.stroke();
+  }
+
+  // Natural Stone Seawall Texture on Piers
+  function drawPierTexture(pts, atmos) {
+    const lerpPt = (a, b, t) => ({ x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t });
+    const w1 = lerpPt(pts[0], pts[3], 0.68);
+    const w2 = lerpPt(pts[1], pts[2], 0.68);
+    ctx.fillStyle = shadeHex('#526071', 0.82 * atmos.lightIntensity);
+    drawPolygon([w1, w2, pts[2], pts[3]], ctx.fillStyle, '#334155', 1);
+  }
+
+  function drawCobblestoneDeck(pts) {
+    const lerpPt = (a, b, t) => ({ x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t });
+    ctx.strokeStyle = 'rgba(71, 85, 105, 0.45)';
+    ctx.lineWidth = 1;
+    for (let t of [0.33, 0.66]) {
+      const pA = lerpPt(pts[0], pts[3], t);
+      const pB = lerpPt(pts[1], pts[2], t);
+      ctx.beginPath();
+      ctx.moveTo(pA.x, pA.y);
+      ctx.lineTo(pB.x, pB.y);
+      ctx.stroke();
+    }
+  }
+
+  // Realistic Windows with Stone Surrounds & Warm Interior Lights
+  function drawFacadeWindows(pts, hasDoor, isNight) {
+    const lerpPt = (a, b, t) => ({ x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t });
+    const winColor = isNight ? '#fbbf24' : '#1e293b';
+    const frameColor = isNight ? '#d97706' : '#94a3b8';
+
+    if (hasDoor) {
+      const dL = lerpPt(pts[0], pts[1], 0.4);
+      const dR = lerpPt(pts[0], pts[1], 0.6);
+      const bL = lerpPt(pts[3], pts[2], 0.4);
+      const bR = lerpPt(pts[3], pts[2], 0.6);
+      drawPolygon([lerpPt(dL, bL, 0.36), lerpPt(dR, bR, 0.36), bR, bL], '#3e2723', '#5d4037', 1);
+    } else {
+      for (const uC of [0.32, 0.68]) {
+        const tL = lerpPt(pts[0], pts[1], uC - 0.085);
+        const tR = lerpPt(pts[0], pts[1], uC + 0.085);
+        const bL = lerpPt(pts[3], pts[2], uC - 0.085);
+        const bR = lerpPt(pts[3], pts[2], uC + 0.085);
+        const wQuad = [lerpPt(tL, bL, 0.26), lerpPt(tR, bR, 0.26), lerpPt(tR, bR, 0.68), lerpPt(tL, bL, 0.68)];
+        drawPolygon(wQuad, winColor, frameColor, 0.8);
+
+        // Windowpane divider bar
+        ctx.strokeStyle = frameColor;
+        ctx.lineWidth = 0.8;
+        ctx.beginPath();
+        const midT = lerpPt(wQuad[0], wQuad[1], 0.5);
+        const midB = lerpPt(wQuad[3], wQuad[2], 0.5);
+        ctx.moveTo(midT.x, midT.y);
+        ctx.lineTo(midB.x, midB.y);
+        ctx.stroke();
+      }
+    }
+  }
+
+  // ============================================================================
+  // 10. INTERACTION, RAYCASTING & CONTROLS
+  // ============================================================================
+  let mousePos = { x: -999, y: -999 };
+  let hoveredHit = null;
+  let pointerDown = null;
+  let isDraggingCamera = false;
+  let dragLastPos = { x: 0, y: 0 };
+
+  function updateHoveredHit() {
+    hoveredHit = null;
+    for (let i = interactiveFaces.length - 1; i >= 0; i--) {
+      const f = interactiveFaces[i];
+      if (pointInPoly(mousePos.x, mousePos.y, f.poly)) {
+        if (!hoveredHit || f.depth > hoveredHit.depth) hoveredHit = f;
+      }
+    }
+
+    const infoEl = document.getElementById('hoverInfo');
+    if (!hoveredHit) {
+      infoEl.innerHTML = 'Drag to orbit smoothly. Click water to build piers, or click walls/roofs to stack & cantilever.';
+      return;
+    }
+
+    const p = hoveredHit.placePos;
+    const typeObj = BLOCK_TYPES.find(t => t.id === activeBlockType);
+    if (activeTool === 'erase') {
+      infoEl.innerHTML = `✂️ <b>Demolish Tool Active</b> &mdash; Click block to remove`;
+    } else if (hoveredHit.isWater) {
+      infoEl.innerHTML = `🌊 <b>Water (${p.x}, ${p.z})</b> &mdash; Click to raise Canal Pier`;
+    } else if (p.y > 0 && !hasVoxel(p.x, p.y - 1, p.z)) {
+      infoEl.innerHTML = `🏗️ <b>Cantilever Overhang (+${p.y})</b> &mdash; Place ${typeObj.name}`;
+    } else {
+      infoEl.innerHTML = `🏠 <b>Upper Floor (+${p.y})</b> &mdash; Place ${typeObj.name}`;
+    }
+  }
+
+  function drawHoverHighlight() {
+    updateHoveredHit();
+    if (!hoveredHit || isDraggingCamera) return;
+
+    if (activeTool === 'erase' && hoveredHit.voxel) {
+      drawPolygon(hoveredHit.poly, 'rgba(239, 68, 68, 0.4)', '#ef4444', 2.0);
+    } else {
+      drawPolygon(hoveredHit.poly, 'rgba(255, 255, 255, 0.22)', 'rgba(255, 255, 255, 0.7)', 1.5);
+    }
+  }
+
+  function spawnMortarPuff(gx, gy, gz) {
+    const wc = voxelCenterWorld(gx, gy, gz);
+    for (let i = 0; i < 8; i++) {
+      const a = Math.random() * Math.PI * 2, spd = 0.8 + Math.random() * 2;
+      mortarPuffs.push({
+        wx: wc.x, wy: wc.y, wz: wc.z,
+        vx: Math.cos(a) * spd, vy: (Math.random() - 0.2) * 1.5, vz: Math.sin(a) * spd,
+        r: 3.5 + Math.random() * 4, life: 1.0
+      });
+    }
+  }
+
+  function handlePlaceAction() {
+    if (!hoveredHit) return;
+    const { x, y, z } = hoveredHit.placePos;
+    if (y > MAX_HEIGHT || Math.hypot(x, z) > GRID_RADIUS + 0.6 || hasVoxel(x, y, z)) return;
+
+    saveUndoSnapshot();
+    voxels.set(keyOf(x, y, z), {
+      x, y, z,
+      colorId: selectedColor,
+      blockType: y === 0 ? 'standard' : activeBlockType,
+      scaleAnim: 0.2,
+      scaleVel: 0.35,
+      stress: 0,
+      archDirs: []
+    });
+
+    spawnMortarPuff(x, y, z);
+    if (y === 0) {
+      ripples.push({ x, z, r: 6, maxR: 110, alpha: 0.85 });
+      audio.plop(0, true);
+    } else {
+      audio.plop(y, false);
+    }
+
+    rebuildArchitectureAndPhysics(true);
+  }
+
+  function handleDemolishAction() {
+    if (!hoveredHit || !hoveredHit.voxel) return;
+    const v = hoveredHit.voxel;
+    saveUndoSnapshot();
+    voxels.delete(keyOf(v.x, v.y, v.z));
+    spawnMortarPuff(v.x, v.y, v.z);
+    if (v.y === 0) ripples.push({ x: v.x, z: v.z, r: 6, maxR: 90, alpha: 0.7 });
+    audio.removePop(v.y);
+    rebuildArchitectureAndPhysics(true);
+  }
+
+  canvas.addEventListener('contextmenu', e => e.preventDefault());
+
+  canvas.addEventListener('mousedown', e => {
+    const rect = canvas.getBoundingClientRect();
+    mousePos = { x: e.clientX - rect.left, y: e.clientY - rect.top };
+    pointerDown = { x: e.clientX, y: e.clientY, button: e.button, shift: e.shiftKey };
+    dragLastPos = { x: e.clientX, y: e.clientY };
+    isDraggingCamera = false;
+    camera.velYaw = 0;
+    camera.velPitch = 0;
+    camera.velPanX = 0;
+    camera.velPanY = 0;
+  });
+
+  window.addEventListener('mousemove', e => {
+    const rect = canvas.getBoundingClientRect();
+    mousePos = { x: e.clientX - rect.left, y: e.clientY - rect.top };
+
+    if (!pointerDown) return;
+    const dx = e.clientX - dragLastPos.x;
+    const dy = e.clientY - dragLastPos.y;
+    dragLastPos = { x: e.clientX, y: e.clientY };
+
+    if (!isDraggingCamera && Math.hypot(e.clientX - pointerDown.x, e.clientY - pointerDown.y) > 4) {
+      isDraggingCamera = true;
+    }
+
+    if (isDraggingCamera) {
+      if (pointerDown.shift || pointerDown.button === 1) {
+        camera.panX += dx;
+        camera.panY += dy;
+        camera.velPanX = dx * 0.5;
+        camera.velPanY = dy * 0.5;
+      } else {
+        const dYaw = -dx * 0.0085;
+        const dPitch = dy * 0.007;
+        camera.yaw += dYaw;
+        camera.pitch = Math.max(0.22, Math.min(1.28, camera.pitch + dPitch));
+        camera.velYaw = dYaw;
+        camera.velPitch = dPitch;
+      }
+    }
+  });
+
+  window.addEventListener('mouseup', () => {
+    if (!pointerDown) return;
+    if (!isDraggingCamera) {
+      updateHoveredHit();
+      if (pointerDown.button === 0 && !pointerDown.shift) {
+        if (activeTool === 'erase') handleDemolishAction();
+        else handlePlaceAction();
+      } else if (pointerDown.button === 2) {
+        handleDemolishAction();
+      }
+    }
+    pointerDown = null;
+    isDraggingCamera = false;
+  });
+
+  canvas.addEventListener('wheel', e => {
+    e.preventDefault();
+    const factor = e.deltaY < 0 ? 1.1 : 0.9;
+    camera.targetZoom = Math.max(0.45, Math.min(2.3, camera.targetZoom * factor));
+  }, { passive: false });
+
+  document.getElementById('btnQuickUndo').addEventListener('click', performUndo);
+  document.getElementById('btnUndoTop').addEventListener('click', performUndo);
+
+  document.getElementById('btnEraserTool').addEventListener('click', e => {
+    activeTool = activeTool === 'erase' ? 'build' : 'erase';
+    e.currentTarget.classList.toggle('active-tool', activeTool === 'erase');
+    showToast(activeTool === 'erase' ? '✂️ Eraser Active: Click blocks to remove' : 'Build Mode Active');
+  });
+
+  // Hotkeys
+  window.addEventListener('keydown', e => {
+    const k = e.key.toLowerCase();
+    if (k === 'z' || k === 'u' || e.key === 'Backspace') {
+      e.preventDefault();
+      performUndo();
+    } else if (k === 'x') {
+      document.getElementById('btnEraserTool').click();
+    } else if (k === 's') {
+      document.getElementById('btnStressView').click();
+    } else if (k === 'q') {
+      document.querySelector('[data-type="standard"]').click();
+    } else if (k === 'w') {
+      document.querySelector('[data-type="balcony"]').click();
+    } else if (k === 'e') {
+      document.querySelector('[data-type="fountain"]').click();
+    } else if (k === 'r') {
+      document.querySelector('[data-type="garden"]').click();
+    } else if (k === 't') {
+      document.querySelector('[data-type="arcade"]').click();
+    } else if (e.key >= '1' && e.key <= '8') {
+      const idx = parseInt(e.key, 10) - 1;
+      document.querySelectorAll('.swatch-btn')[idx]?.click();
+    }
+  });
+
+  document.getElementById('sunSlider').addEventListener('input', e => {
+    sunSliderVal = parseInt(e.target.value, 10);
+    const totalMinutes = Math.round((sunSliderVal / 100) * 19 * 60) + 5 * 60;
+    const hh = String(Math.floor(totalMinutes / 60) % 24).padStart(2, '0');
+    const mm = String(totalMinutes % 60).padStart(2, '0');
+    document.getElementById('clockLabel').textContent = `${hh}:${mm}`;
+    document.getElementById('timeLabel').textContent =
+      sunSliderVal < 20 ? 'Coastal Dawn' : sunSliderVal < 55 ? 'Mediterranean Noon' :
+      sunSliderVal < 75 ? 'Golden Hour' : sunSliderVal < 85 ? 'Sunset Glow' : 'Starlit Night';
+  });
+
+  document.getElementById('btnStressView').addEventListener('click', e => {
+    showStressOverlay = !showStressOverlay;
+    e.currentTarget.textContent = `📐 Stress: ${showStressOverlay ? 'ON' : 'OFF'}`;
+    e.currentTarget.classList.toggle('active-toggle', showStressOverlay);
+  });
+
+  document.getElementById('btnPhysicsToggle').addEventListener('click', e => {
+    gravityEnabled = !gravityEnabled;
+    e.currentTarget.textContent = `⚖️ Gravity: ${gravityEnabled ? 'ON' : 'OFF'}`;
+    e.currentTarget.classList.toggle('active-toggle', gravityEnabled);
+    if (gravityEnabled) rebuildArchitectureAndPhysics(true);
+    showToast(gravityEnabled ? 'Gravity Limits Active' : 'Cozy Mode: Infinite Overhangs!');
+  });
+
+  document.getElementById('btnShare').addEventListener('click', () => {
+    updateUrlHash();
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(window.location.href).catch(() => {});
+    }
+    showToast('🔗 Town link copied to clipboard!');
+  });
+
+  document.getElementById('btnClear').addEventListener('click', () => {
+    saveUndoSnapshot();
+    voxels.clear();
+    rebuildArchitectureAndPhysics(false);
+    showToast('Ocean cleared — click water to build!');
+  });
+
+  document.getElementById('presetSelect').addEventListener('change', e => {
+    loadPreset(e.target.value);
+    audio.plop(4, false);
+  });
+
+  if (!loadFromUrlHash()) {
+    loadPreset('port');
+  }
+
+  function loop() {
+    renderScene();
+    requestAnimationFrame(loop);
+  }
+  loop();
+})();
+</script>
+</body>
+</html>

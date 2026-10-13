@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="The Simulation Stacks — a card-catalog gallery of student-built AI simulations from AI: Foundations and Frontiers at Blair Academy." />
+  <title>The Simulation Stacks · Blair Academy</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Bree+Serif&family=Cinzel:wght@500;600&family=EB+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      /* Blair palette */
+      --blair-blue: #004b8d;
+      --dark-blue: #093266;
+      --athletic-navy: #0f2043;
+      --cool-grey: #72808a;
+      --warm-grey: #99928a;
+      --sky: #5f8fb4;
+      --yellow: #dd971a;
+      --web-grey: #e9e7e5;
+
+      --paper: #fbf8f1;
+      --paper-edge: #e6dfcf;
+      --ink: #1b2433;
+      --ink-soft: #4a5566;
+      --brass-hi: #f3d58c;
+      --brass: #dd971a;
+      --brass-lo: #7a5410;
+
+      --serif: "Adobe Garamond Pro", "EB Garamond", Garamond, Georgia, serif;
+      --display: "Bree Serif", Georgia, serif;
+      --caps: "Trajan Pro", "Cinzel", "Times New Roman", serif;
+      --mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+    }
+
+    * { box-sizing: border-box; }
+    html, body { margin: 0; }
+    body {
+      background:
+        radial-gradient(ellipse at top, rgba(95,143,180,.18), transparent 60%),
+        repeating-linear-gradient(90deg, rgba(255,255,255,.015) 0 2px, transparent 2px 7px),
+        linear-gradient(180deg, var(--dark-blue), var(--athletic-navy));
+      background-attachment: fixed;
+      color: var(--paper);
+      font-family: var(--serif);
+      min-height: 100vh;
+    }
+    a { color: inherit; }
+
+    .lib { max-width: 1240px; margin: 0 auto; padding: 28px 16px 40px; position: relative; }
+
+    /* ─── Masthead ─── */
+    .masthead {
+      border: 1px solid rgba(221,151,26,.45);
+      outline: 1px solid rgba(221,151,26,.18);
+      outline-offset: 5px;
+      border-radius: 4px;
+      padding: 26px 28px;
+      background: linear-gradient(180deg, rgba(0,75,141,.55), rgba(9,50,102,.35));
+      box-shadow: inset 0 0 60px rgba(0,0,0,.35), 0 18px 40px rgba(0,0,0,.35);
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      gap: 28px;
+      align-items: center;
+    }
+    .crest {
+      width: 148px; height: 148px; border-radius: 50%;
+      background: #fff;
+      display: grid; place-items: center;
+      box-shadow: 0 0 0 4px var(--brass), 0 0 0 7px rgba(0,0,0,.35), 0 10px 24px rgba(0,0,0,.5);
+    }
+    .crest img { width: 112px; height: auto; display: block; }
+
+    .masthead-title { text-align: center; }
+    .kicker {
+      font-family: var(--caps); letter-spacing: .28em; font-size: 12px;
+      color: var(--brass-hi); margin: 0 0 8px; text-transform: uppercase;
+    }
+    h1 {
+      font-family: var(--display); font-weight: 400;
+      font-size: clamp(36px, 6vw, 64px); line-height: 1.02; margin: 0;
+      background: linear-gradient(180deg, #fff6dc 10%, var(--brass-hi) 45%, var(--brass) 80%);
+      -webkit-background-clip: text; background-clip: text; color: transparent;
+      text-shadow: 0 2px 0 rgba(0,0,0,.08);
+    }
+    .rule { display: flex; align-items: center; gap: 12px; margin: 12px auto; max-width: 420px; color: var(--brass); }
+    .rule .line { flex: 1; height: 1px; background: linear-gradient(90deg, transparent, var(--brass), transparent); }
+    .tagline { font-size: 18px; font-style: italic; color: #dfe7f1; margin: 0 auto; max-width: 560px; line-height: 1.45; }
+
+    .meta { display: flex; flex-direction: column; gap: 8px; align-items: stretch; min-width: 190px; }
+    .meta-link {
+      font-family: var(--mono); font-size: 11px; letter-spacing: .14em; text-transform: uppercase;
+      color: var(--brass-hi); text-decoration: none; text-align: center;
+      border: 1px solid rgba(221,151,26,.5); border-radius: 2px; padding: 8px 10px;
+      background: rgba(0,0,0,.18); cursor: pointer;
+    }
+    .meta-link:hover { background: rgba(221,151,26,.15); }
+    .count { font-family: var(--mono); font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: #c9d4e2; text-align: center; margin: 4px 0 0; }
+    .count b { color: var(--brass-hi); font-weight: 500; }
+
+    /* ─── Filters ─── */
+    .filters { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin: 26px 0 0; }
+    .chip {
+      font-family: var(--mono); font-size: 11px; letter-spacing: .12em; text-transform: uppercase;
+      background: transparent; color: #c9d4e2; border: 1px solid rgba(201,212,226,.35);
+      border-radius: 999px; padding: 6px 12px; cursor: pointer;
+    }
+    .chip[aria-pressed="true"] { background: var(--brass); color: var(--athletic-navy); border-color: var(--brass); }
+
+    /* ─── Drawer / catalog ─── */
+    .drawer {
+      margin-top: 22px; padding: 26px;
+      border-radius: 6px;
+      background: linear-gradient(180deg, #0b2a55, #0a2347);
+      box-shadow: inset 0 3px 0 rgba(255,255,255,.05), inset 0 0 0 1px rgba(221,151,26,.25), inset 0 20px 40px rgba(0,0,0,.45);
+    }
+    .catalog { display: grid; grid-template-columns: repeat(auto-fill, minmax(270px, 1fr)); gap: 24px; }
+
+    .card {
+      position: relative; display: flex; flex-direction: column;
+      background:
+        repeating-linear-gradient(180deg, transparent 0 27px, rgba(0,75,141,.07) 27px 28px),
+        linear-gradient(180deg, var(--paper), #f4efe2);
+      color: var(--ink); text-decoration: none;
+      border-radius: 3px; padding: 18px 18px 16px;
+      box-shadow: 0 1px 0 var(--paper-edge), 0 10px 22px rgba(0,0,0,.4);
+      transition: transform .18s ease, box-shadow .18s ease;
+      min-height: 100%;
+    }
+    a.card:hover, a.card:focus-visible { transform: translateY(-4px) rotate(-.3deg); box-shadow: 0 18px 30px rgba(0,0,0,.5); outline: none; }
+    a.card:focus-visible { box-shadow: 0 0 0 3px var(--brass), 0 18px 30px rgba(0,0,0,.5); }
+    .card::before { /* catalog-card rod hole */
+      content: ""; position: absolute; bottom: 10px; left: 50%; width: 14px; height: 14px; margin-left: -7px;
+      border-radius: 50%; background: #0a2347; box-shadow: inset 0 2px 3px rgba(0,0,0,.6);
+    }
+    .corner { position: absolute; top: 0; right: 0; width: 34px; height: 34px; }
+
+    .head { display: flex; justify-content: space-between; gap: 10px; font-family: var(--mono); font-size: 10.5px; letter-spacing: .1em; text-transform: uppercase; padding-right: 26px; }
+    .callno { color: var(--blair-blue); }
+    .subject { color: var(--ink-soft); font-weight: 500; text-align: right; }
+    .title { font-family: var(--display); font-weight: 400; font-size: 23px; line-height: 1.15; margin: 12px 0 6px; color: var(--dark-blue); }
+    .attrib { font-size: 16px; color: var(--ink); margin-bottom: 12px; }
+    .attrib .tbd { color: var(--cool-grey); font-style: italic; }
+    .plate { border: 1px solid var(--paper-edge); background: #fff; padding: 5px; box-shadow: 0 1px 2px rgba(0,0,0,.12); }
+    .window { aspect-ratio: 16 / 10.75; overflow: hidden; background: var(--web-grey); }
+    .window img { width: 100%; height: 100%; object-fit: cover; object-position: top center; display: block; }
+    .window .placeholder {
+      height: 100%; display: grid; place-items: center; text-align: center;
+      font-family: var(--caps); letter-spacing: .2em; font-size: 11px; color: var(--cool-grey); text-transform: uppercase;
+      background: repeating-linear-gradient(45deg, #f1f3f4 0 10px, #e9e7e5 10px 20px);
+    }
+    .blurb { font-size: 16px; line-height: 1.4; color: var(--ink-soft); font-style: italic; margin: 12px 0 18px; }
+    .note { font-family: var(--mono); font-size: 10px; letter-spacing: .06em; color: #8a5a00; margin: -8px 0 18px; text-transform: uppercase; }
+
+    .card.pending { opacity: .62; }
+    .card.pending .title { color: var(--cool-grey); }
+
+    /* ─── Footer ─── */
+    footer { text-align: center; margin-top: 34px; color: #b9c6d8; font-size: 16px; }
+    footer p { margin: 6px 0; }
+    .footer-caps { font-family: var(--caps); letter-spacing: .3em; font-size: 13px; color: var(--brass-hi); }
+    .footer-mono { font-family: var(--mono); font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: var(--cool-grey); }
+
+    @media (max-width: 860px) {
+      .masthead { grid-template-columns: 1fr; text-align: center; justify-items: center; padding: 22px 16px; }
+      .meta { flex-direction: row; flex-wrap: wrap; justify-content: center; min-width: 0; }
+      .crest { width: 120px; height: 120px; }
+      .crest img { width: 92px; }
+      .drawer { padding: 16px; }
+    }
+    @media (prefers-reduced-motion: reduce) { a.card { transition: none; } }
+  </style>
+</head>
+<body>
+  <div class="lib">
+    <header class="masthead">
+      <div class="crest"><img src="assets/blair-seal.png" alt="Blair Academy seal" /></div>
+      <div class="masthead-title">
+        <p class="kicker">Blair Academy · AI: Foundations and Frontiers</p>
+        <h1>The Simulation Stacks</h1>
+        <div class="rule" aria-hidden="true"><span class="line"></span><span>✦</span><span class="line"></span></div>
+        <p class="tagline">Unit 1: Designing a Simulation. A card catalog of student-built learning tools, each directed by a student and built in collaboration with AI.</p>
+      </div>
+      <div class="meta">
+        <button type="button" class="meta-link" id="shuffle">↻ Shuffle</button>
+        <p class="count">Projects on file: <b id="count">0</b> / <b id="total">0</b></p>
+      </div>
+    </header>
+
+    <nav class="filters" id="filters" aria-label="Filter by subject"></nav>
+
+    <section class="drawer">
+      <div class="catalog" id="catalog"></div>
+    </section>
+
+    <footer>
+      <p class="footer-caps">BLAIR ACADEMY</p>
+      <p>Student work from AI: Foundations and Frontiers, fall 2026.</p>
+      <p class="footer-mono">Each project carries its author’s own AI diligence statement</p>
+    </footer>
+  </div>
+
+  <script>
+    /* To add a project: drop its HTML in projects/, a screenshot in assets/, and fill in an entry below.
+       Leave url empty to show an "awaiting submission" card. */
+    const ENTRIES = [
+      { slug: 'limits-lab', title: 'Limits Lab', student: 'Lil Hyder', subject: 'Calculus',
+        url: 'projects/limits-lab.html', image: 'assets/limits-lab.png',
+        blurb: 'Seven topics on limits, ordered easiest to hardest and built from class worksheets and notes, with narrated animations, interactive graphs and verified practice problems.' },
+      { slug: 'recovery-kitchen', title: 'Recovery Kitchen', student: 'Parker Lee', subject: 'Sports Nutrition',
+        url: 'projects/recovery-kitchen.html', image: 'assets/recovery-kitchen.png',
+        blurb: 'Build a post-workout meal for your body and your sport, get a tough recovery grade and learn what each food contributes.' },
+      { slug: 'prompt-lab', title: 'The Prompt Lab', student: 'Ria Chae', subject: 'AI Literacy',
+        url: 'projects/prompt-lab.html', image: 'assets/prompt-lab.png',
+        blurb: 'Four experiment stations show how prompt design changes LLM behavior, and why a fluent answer isn’t always a reliable one.',
+        note: 'Live AI chat is off in this public copy' },
+      { slug: 'great-war', title: 'The Great War: Supreme Command', student: 'Aydan Zosche', subject: 'History',
+        url: 'projects/great-war.html', image: 'assets/great-war.png',
+        blurb: 'Command the Entente or the Central Powers from 1914 to 1918 by typing your own orders, then face your cabinet, the press and the map.' },
+      { slug: 'crumb-and-capital', title: 'Crumb & Capital', student: 'Aanya Hemady', subject: 'Economics',
+        url: 'projects/october-8.html', image: 'assets/october-8.png',
+        blurb: 'Run a bakery while working through Unit 1 of microeconomics: scarcity, opportunity cost, the production possibilities frontier and marginal utility.' },
+      { slug: 'ai-repair-cafe', title: 'AI Repair Café', student: 'Evie Holleman', subject: 'AI Literacy',
+        url: 'projects/ai-repair-cafe.html', image: 'assets/ai-repair-cafe.png',
+        blurb: 'Run an ice-cream repair café where customers bring AI mistakes and you practice delegation, description, discernment and diligence.' },
+      { slug: 'rightwise', title: 'Rightwise', student: 'Ray Fernandez', subject: 'Law & Civics',
+        url: 'projects/rightwise.html', image: 'assets/rightwise.png',
+        blurb: 'Build legal knowledge one lesson at a time, from U.S. foundations to state-specific challenges in California, New York and Texas.' },
+      { slug: 'painted-market', title: 'The Painted Market', student: 'Victor Adebayo', subject: 'Economics & Art',
+        url: 'projects/painted-market.html', image: 'assets/painted-market.png',
+        blurb: 'An interdisciplinary simulation of art, trade, supply and demand, set amid the Dutch tulip speculation.' },
+      { slug: 'compass-quest', title: 'Compass Quest', student: 'Danny DiCarlo', subject: 'Geometry',
+        url: 'projects/compass-quest.html', image: 'assets/compass-quest.png',
+        blurb: 'A hands-on geometry adventure: start with a single point and work through compass constructions, earning XP along a learning path.' },
+      { slug: 'tiempo-quest', title: 'Tiempo Quest', student: 'Anya Donahue', subject: 'Spanish',
+        url: 'projects/tiempo-quest.html', image: 'assets/tiempo-quest.png',
+        blurb: 'A Spanish space adventure across six dimensions: talk to residents, repair the town and reclaim the timeline, one verb tense at a time.' },
+      { slug: 'understanding-anatomy', title: 'Understanding Anatomy', student: 'Jade Mehta', subject: 'Anatomy',
+        url: 'projects/understanding-anatomy.html', image: 'assets/understanding-anatomy.png',
+        blurb: 'A study companion built from Blair Anatomy class materials: practice questions, tissue identification and body regions.' },
+      { slug: 'earthquake-tower', title: 'Earthquake Tower Challenge', student: 'Toby Curran', subject: 'Engineering',
+        url: 'projects/earthquake-tower.html', image: 'assets/earthquake-tower.png',
+        blurb: 'Build, shake and improve an earthquake-resistant tower, inspired by the Safer Buildings classroom project.' },
+      { slug: 'sleep-vs-scores', title: 'Sleep vs. Test Scores', student: 'Will Keller', subject: 'Statistics',
+        url: 'projects/sleep-vs-scores.html', image: 'assets/sleep-vs-scores.png',
+        blurb: 'Drag students around a scatterplot to see how covariance and correlation work, and why one outlier can change r.' },
+      { slug: 'townscaper-cantilever', title: 'Townscaper: Cantilever', student: 'Walker Swann', subject: 'Architecture',
+        url: 'projects/townscaper-cantilever.html', image: 'assets/townscaper-cantilever.png',
+        blurb: 'A 3D coastal architecture sandbox: build towns, bridges and towers, then check stress and gravity limits on your cantilevers.' },
+      { slug: 'la-cuisine', title: 'La Cuisine', student: 'Dillon Allen', subject: 'French',
+        url: 'projects/la-cuisine.html', image: 'assets/la-cuisine.png',
+        blurb: 'Cook with Chef Barbe and learn French food vocabulary, earning stars to spend in La Boutique.' },
+    ];
+    const TOTAL_EXPECTED = 16;
+
+    const esc = s => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+
+    const brass = id => `<svg class="corner" viewBox="0 0 38 38" aria-hidden="true">
+      <defs><linearGradient id="g-${id}" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0%" stop-color="#f3d58c"/><stop offset="45%" stop-color="#dd971a"/><stop offset="100%" stop-color="#7a5410"/>
+      </linearGradient></defs>
+      <path d="M0 0 L38 0 L38 38 Q 38 18, 18 8 Q 8 4, 0 0 Z" fill="url(#g-${id})" stroke="rgba(0,0,0,.45)" stroke-width=".6"/>
+      <circle cx="28" cy="10" r="1.4" fill="#0f2043"/>
+    </svg>`;
+
+    // Pad with placeholder cards for projects not yet submitted
+    const filled = ENTRIES.map((e, i) => ({ ...e, n: i + 1 }));
+    for (let i = filled.length; i < TOTAL_EXPECTED; i++) {
+      filled.push({ slug: 'pending-' + i, n: i + 1, title: 'Awaiting submission', subject: 'Unit 1', pending: true });
+    }
+
+    let activeSubject = 'All';
+    let order = filled.map((_, i) => i);
+
+    function shuffle() {
+      // keep submitted projects first, shuffled; placeholders stay at the end
+      const live = order.filter(i => !filled[i].pending), wait = order.filter(i => filled[i].pending);
+      for (let i = live.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [live[i], live[j]] = [live[j], live[i]]; }
+      order = live.concat(wait);
+    }
+
+    function card(e) {
+      const callNo = `AIFF · U1 · ${String(e.n).padStart(3, '0')}`;
+      const plate = e.image
+        ? `<div class="window"><img src="${esc(e.image)}" alt="" loading="lazy"></div>`
+        : `<div class="window"><div class="placeholder">${e.pending ? 'awaiting<br>submission' : 'no preview'}</div></div>`;
+      const who = e.pending ? '' : (e.student ? esc(e.student) : '<span class="tbd">Student name TBD</span>');
+      const inner = `${brass(e.slug)}
+        <div class="head"><span class="callno">${callNo}</span><span class="subject">${esc(e.subject)}</span></div>
+        <h2 class="title">${esc(e.title)}</h2>
+        <div class="attrib">${who}</div>
+        <div class="plate">${plate}</div>
+        ${e.blurb ? `<p class="blurb">“${esc(e.blurb)}”</p>` : '<p class="blurb"></p>'}
+        ${e.note ? `<p class="note">${esc(e.note)}</p>` : ''}`;
+      return e.url
+        ? `<a class="card" href="${esc(e.url)}" target="_blank" rel="noopener">${inner}</a>`
+        : `<article class="card pending">${inner}</article>`;
+    }
+
+    function render() {
+      const list = order.map(i => filled[i]).filter(e => activeSubject === 'All' || e.subject === activeSubject);
+      document.getElementById('catalog').innerHTML = list.map(card).join('');
+    }
+
+    function renderFilters() {
+      const subjects = ['All', ...new Set(ENTRIES.map(e => e.subject))];
+      const nav = document.getElementById('filters');
+      nav.innerHTML = subjects.map(s => `<button type="button" class="chip" aria-pressed="${s === activeSubject}">${esc(s)}</button>`).join('');
+      nav.querySelectorAll('.chip').forEach(b => b.addEventListener('click', () => {
+        activeSubject = b.textContent; renderFilters(); render();
+      }));
+    }
+
+    document.getElementById('count').textContent = ENTRIES.filter(e => e.url).length;
+    document.getElementById('total').textContent = TOTAL_EXPECTED;
+    document.getElementById('shuffle').addEventListener('click', () => { shuffle(); render(); });
+    shuffle(); renderFilters(); render();
+  </script>
+</body>
+</html>
